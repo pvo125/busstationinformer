@@ -29,7 +29,8 @@ public:
     ~MainWindow();
 
     httpProcess *http;
-    QTimer redrawTimer;
+    QTimer secTimer;
+    QTimer routViewTimer;
     QMediaPlayer *player;
     QVector<ROUT_ITEM> *routlistFront;
     QVector<ROUT_ITEM> *routlistBack;
@@ -43,7 +44,8 @@ protected:
     virtual void keyPressEvent(QKeyEvent *ev);
 
 private slots:
-    void redrawTimerExpired(void);
+    void secTimerExpired(void);
+    void routViewTimerExpired(void);
     void playerStateChanged(QMediaPlayer::State);
 };
 #endif // MAINWINDOW_H

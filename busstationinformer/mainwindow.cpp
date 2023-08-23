@@ -18,9 +18,14 @@ MainWindow::MainWindow(QWidget *parent)
     routlistFront=new QVector<ROUT_ITEM>();
     routlistBack=new QVector<ROUT_ITEM>();
 
-    redrawTimer.setInterval(500);
-    connect(&redrawTimer,SIGNAL(timeout()),SLOT(redrawTimerExpired()));
-    redrawTimer.start();
+    secTimer.setInterval(500);
+    connect(&secTimer,SIGNAL(timeout()),SLOT(secTimerExpired()));
+    secTimer.start();
+
+    routViewTimer.setInterval(5000);
+    connect(&routViewTimer,SIGNAL(timeout()),SLOT(routViewTimerExpired()));
+    routViewTimer.start();
+
     player = new QMediaPlayer;
     connect(player, SIGNAL(stateChanged(QMediaPlayer::State)), this, SLOT(playerStateChanged(QMediaPlayer::State)));
 
@@ -61,9 +66,9 @@ void MainWindow::keyPressEvent(QKeyEvent *event)
       player->play();
     }
 }
-
-
-
+/*
+ *
+ */
 void MainWindow::playerStateChanged(QMediaPlayer::State state)
 {
     if(state==QMediaPlayer::StoppedState)
@@ -77,8 +82,10 @@ void MainWindow::playerStateChanged(QMediaPlayer::State state)
     }
 
 }
-
-void MainWindow::redrawTimerExpired(void)
+/*
+ *
+ */
+void MainWindow::secTimerExpired(void)
 {
     QTime time=QTime::currentTime();
     QDate date=QDate::currentDate();
@@ -90,4 +97,26 @@ void MainWindow::redrawTimerExpired(void)
 
 
 }
+void MainWindow::routViewTimerExpired(void)
+{
+    ui->string1_routnumber->setText(routlistFront->at(0).routNumber);
+    ui->string1_routname->setText(routlistFront->at(0).routName);
+    ui->string1_lefttime->setText(routlistFront->at(0).timeLeft);
+
+    ui->string2_routnumber->setText(routlistFront->at(1).routNumber);
+    ui->string2_routname->setText(routlistFront->at(1).routName);
+    ui->string2_lefttime->setText(routlistFront->at(1).timeLeft);
+
+    ui->string3_routnumber->setText(routlistFront->at(2).routNumber);
+    ui->string3_routname->setText(routlistFront->at(2).routName);
+    ui->string3_lefttime->setText(routlistFront->at(2).timeLeft);
+
+    ui->string4_routnumber->setText(routlistFront->at(3).routNumber);
+    ui->string4_routname->setText(routlistFront->at(3).routName);
+    ui->string4_lefttime->setText(routlistFront->at(3).timeLeft);
+
+}
+/*
+ *
+ */
 

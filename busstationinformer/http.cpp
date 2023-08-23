@@ -13,8 +13,7 @@ httpProcess::httpProcess(QMainWindow *parent)
    connect(&httpRequestTimer,SIGNAL(timeout()),this,SLOT(httpTimerExpired()));
    httpRequestTimer.setInterval(30000);
    httpRequestTimer.start();
-
-
+   startRequest();
 }
 /*
  *
