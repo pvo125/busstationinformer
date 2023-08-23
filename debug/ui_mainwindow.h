@@ -115,7 +115,7 @@ public:
     {
         if (MainWindow->objectName().isEmpty())
             MainWindow->setObjectName(QString::fromUtf8("MainWindow"));
-        MainWindow->resize(979, 947);
+        MainWindow->resize(979, 1002);
         centralwidget = new QWidget(MainWindow);
         centralwidget->setObjectName(QString::fromUtf8("centralwidget"));
         gridLayout = new QGridLayout(centralwidget);
@@ -150,7 +150,7 @@ public:
         palette.setBrush(QPalette::Disabled, QPalette::Window, brush1);
         string4_routname->setPalette(palette);
         QFont font;
-        font.setPointSize(42);
+        font.setPointSize(48);
         string4_routname->setFont(font);
 
         horizontalLayout_8->addWidget(string4_routname);
@@ -193,9 +193,7 @@ public:
         palette1.setBrush(QPalette::Disabled, QPalette::Base, brush1);
         palette1.setBrush(QPalette::Disabled, QPalette::Window, brush1);
         string3_lefttime->setPalette(palette1);
-        QFont font1;
-        font1.setPointSize(48);
-        string3_lefttime->setFont(font1);
+        string3_lefttime->setFont(font);
 
         horizontalLayout_3->addWidget(string3_lefttime);
 
@@ -258,7 +256,7 @@ public:
         palette2.setBrush(QPalette::Disabled, QPalette::Base, brush1);
         palette2.setBrush(QPalette::Disabled, QPalette::Window, brush1);
         string2_lefttime->setPalette(palette2);
-        string2_lefttime->setFont(font1);
+        string2_lefttime->setFont(font);
 
         horizontalLayout_2->addWidget(string2_lefttime);
 
@@ -298,7 +296,7 @@ public:
         palette3.setBrush(QPalette::Disabled, QPalette::Base, brush1);
         palette3.setBrush(QPalette::Disabled, QPalette::Window, brush1);
         string1_lefttime->setPalette(palette3);
-        string1_lefttime->setFont(font1);
+        string1_lefttime->setFont(font);
 
         horizontalLayout->addWidget(string1_lefttime);
 
@@ -372,7 +370,7 @@ public:
         palette5.setBrush(QPalette::Disabled, QPalette::Base, brush1);
         palette5.setBrush(QPalette::Disabled, QPalette::Window, brush1);
         string4_lefttime->setPalette(palette5);
-        string4_lefttime->setFont(font1);
+        string4_lefttime->setFont(font);
 
         horizontalLayout_4->addWidget(string4_lefttime);
 
@@ -415,7 +413,7 @@ public:
         palette6.setBrush(QPalette::Disabled, QPalette::Base, brush1);
         palette6.setBrush(QPalette::Disabled, QPalette::Window, brush1);
         string2_routnumber->setPalette(palette6);
-        string2_routnumber->setFont(font1);
+        string2_routnumber->setFont(font);
 
         gridLayout_4->addWidget(string2_routnumber, 0, 1, 1, 1);
 
@@ -507,15 +505,13 @@ public:
         palette8.setBrush(QPalette::Disabled, QPalette::Base, brush5);
         palette8.setBrush(QPalette::Disabled, QPalette::Window, brush5);
         labelDate->setPalette(palette8);
-        labelDate->setFont(font1);
+        labelDate->setFont(font);
 
         gridLayout_2->addWidget(labelDate, 0, 1, 1, 1);
 
         label_7 = new QLabel(frame_13);
         label_7->setObjectName(QString::fromUtf8("label_7"));
-        QFont font2;
-        font2.setPointSize(36);
-        label_7->setFont(font2);
+        label_7->setFont(font);
 
         gridLayout_2->addWidget(label_7, 0, 5, 1, 1);
 
@@ -547,7 +543,7 @@ public:
         palette9.setBrush(QPalette::Disabled, QPalette::Base, brush5);
         palette9.setBrush(QPalette::Disabled, QPalette::Window, brush5);
         labelTime->setPalette(palette9);
-        labelTime->setFont(font1);
+        labelTime->setFont(font);
 
         gridLayout_2->addWidget(labelTime, 0, 3, 1, 1);
 
@@ -622,7 +618,7 @@ public:
         palette11.setBrush(QPalette::Disabled, QPalette::Base, brush1);
         palette11.setBrush(QPalette::Disabled, QPalette::Window, brush1);
         string3_routnumber->setPalette(palette11);
-        string3_routnumber->setFont(font1);
+        string3_routnumber->setFont(font);
 
         gridLayout_5->addWidget(string3_routnumber, 0, 1, 1, 1);
 
@@ -661,7 +657,7 @@ public:
         palette12.setBrush(QPalette::Disabled, QPalette::Base, brush1);
         palette12.setBrush(QPalette::Disabled, QPalette::Window, brush1);
         string4_routnumber->setPalette(palette12);
-        string4_routnumber->setFont(font1);
+        string4_routnumber->setFont(font);
 
         gridLayout_6->addWidget(string4_routnumber, 0, 1, 1, 1);
 
@@ -701,7 +697,7 @@ public:
         palette13.setBrush(QPalette::Disabled, QPalette::Base, brush1);
         palette13.setBrush(QPalette::Disabled, QPalette::Window, brush1);
         string1_routnumber->setPalette(palette13);
-        string1_routnumber->setFont(font1);
+        string1_routnumber->setFont(font);
 
         gridLayout_3->addWidget(string1_routnumber, 0, 1, 1, 1);
 

@@ -1,12 +1,30 @@
 
 #include <http.h>
 #include <QTextCodec>
+#include <QApplication>
+/*
+ *
+ */
+UpdateRoutList::~UpdateRoutList()
+{
+
+}
+/*
+ *
+ */
+void httpProcess::SendUpdateMsg(enum UpdateRoutList::REDRAW_MSG msg, void *pData)
+{
+    UpdateRoutList *ev=new UpdateRoutList(QEvent::User);
+    ev->SetMsg(msg);
+    ev->SetData(pData);
+    QApplication::postEvent(parentWindow,ev);
+}
 /*
  *
  */
 httpProcess::httpProcess(QMainWindow *parent)
 {
-   buffIndex=0;
+   buffIndex=-1;
    parentWindow=parent;
    url.setUrl("http://84.22.159.130:2929/tablo/?id=100&ver=1.0.2&csq=87&tpcb=42&tcpu=47&ext=27&up=3218&br=6 HTTP/1.0");
    request=QNetworkRequest(url);
@@ -70,7 +88,9 @@ void httpProcess::parcingData(QByteArray &data, QVector<ROUT_ITEM> &routlist)
 void httpProcess::httpFinished(void)
 {
    reply->deleteLater();
-   buffIndex=!buffIndex;
+   if(buffIndex==0)  buffIndex=1;
+   else              buffIndex=0;
+   SendUpdateMsg(UpdateRoutList::UPDATE_ROUT_LIST,&buffIndex);
 }
 /*
  *
@@ -79,9 +99,9 @@ void httpProcess::httpReadyRead(void)
 {
     QByteArray dataRaw;
     dataRaw=reply->readAll();
-    if(buffIndex)   //1
+    if(buffIndex==0)   // 0
         parcingData(dataRaw,*((MainWindow*)parentWindow)->routlistBack);
-    else            //0
+    else            //1, -1
         parcingData(dataRaw,*((MainWindow*)parentWindow)->routlistFront);
 
 }

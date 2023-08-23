@@ -1,9 +1,9 @@
 # Prerequisites
 *.d
 
-debug/
+/debug
 debug
-release/
+/release
 release
 
 # Compiled Object files

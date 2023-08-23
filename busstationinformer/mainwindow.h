@@ -27,7 +27,7 @@ class MainWindow : public QMainWindow
 public:
     MainWindow(QWidget *parent = nullptr);
     ~MainWindow();
-
+    int buffIdx;
     httpProcess *http;
     QTimer secTimer;
     QTimer routViewTimer;
@@ -36,6 +36,10 @@ public:
     QVector<ROUT_ITEM> *routlistBack;
 
     int count=2;
+
+protected:
+    void customEvent(QEvent *event);
+
 private:
     Ui::MainWindow *ui;
 
