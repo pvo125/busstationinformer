@@ -27,6 +27,8 @@ class MainWindow : public QMainWindow
 public:
     MainWindow(QWidget *parent = nullptr);
     ~MainWindow();
+
+    void ClearStringsRouts(int startStrIdx);
     int buffIdx;
     httpProcess *http;
     QTimer secTimer;
@@ -34,6 +36,7 @@ public:
     QMediaPlayer *player;
     QVector<ROUT_ITEM> *routlistFront;
     QVector<ROUT_ITEM> *routlistBack;
+    QVector<ROUT_ITEM>  *currRoutList;
 
     int count=2;
 
