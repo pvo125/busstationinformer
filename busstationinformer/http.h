@@ -9,6 +9,7 @@
 #include "mainwindow.h"
 #include <QVector>
 #include <QEvent>
+#include <QFile>
 
 
 class UpdateRoutList : public QEvent
@@ -42,28 +43,35 @@ class httpProcess: public QWidget{
 Q_OBJECT
 
 public:
+    enum HTTP_REQUEST_STATE
+    {
+        HTTP_REQ_IDLE,
+        HTTP_REQ_BUSY,
+        HTTP_REQ_COMPLETED
+    };
+
     explicit httpProcess(QMainWindow *parent=nullptr);
     ~httpProcess();
-    void startRequest(void);
-    void parcingData(QByteArray &data,QVector<ROUT_ITEM> &list);
-    void SendUpdateMsg(enum UpdateRoutList::REDRAW_MSG msg, void *pData);
 private:
+
     int          buffIndex;
-    QMainWindow *parentWindow;
+    enum HTTP_REQUEST_STATE  httpReqState;
+
+    QMainWindow           *parentWindow;
     QTimer                httpRequestTimer;
     QNetworkAccessManager netManager;
     QUrl                  url;
+    QNetworkReply         *reply;
+    QNetworkRequest       request;
 
-    QNetworkReply *reply;
-    QNetworkRequest request;
+    void startRequest(void);
+    void parcingData(QByteArray &data,QVector<ROUT_ITEM> &list);
+    void SendUpdateMsg(enum UpdateRoutList::REDRAW_MSG msg, void *pData);
 
 public slots:
     void httpFinished();
     void httpReadyRead();
-
     void httpTimerExpired();
-
-
 };
 
 

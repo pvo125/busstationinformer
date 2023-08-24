@@ -25,10 +25,18 @@ class MainWindow : public QMainWindow
     Q_OBJECT
 
 public:
+    enum SND_TIMETRACK
+    {
+       SND_TRACK,
+       SND_TIME
+    };
     MainWindow(QWidget *parent = nullptr);
     ~MainWindow();
 
     void ClearStringsRouts(int startStrIdx);
+
+    int soundTrackCount;
+    enum SND_TIMETRACK timetrackFlag;
     int buffIdx;
     httpProcess *http;
     QTimer secTimer;
@@ -37,8 +45,6 @@ public:
     QVector<ROUT_ITEM> *routlistFront;
     QVector<ROUT_ITEM> *routlistBack;
     QVector<ROUT_ITEM>  *currRoutList;
-
-    int count=2;
 
 protected:
     void customEvent(QEvent *event);

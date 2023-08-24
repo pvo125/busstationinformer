@@ -32,7 +32,8 @@ MainWindow::MainWindow(QWidget *parent)
     , ui(new Ui::MainWindow)
 {
     ui->setupUi(this);
-
+    soundTrackCount=-1;
+    timetrackFlag=SND_TRACK;
     buffIdx=-1;
     currRoutList=NULL;
     http=new httpProcess(this);
@@ -79,12 +80,20 @@ void MainWindow::keyPressEvent(QKeyEvent *event)
     }
     else if(event->key()==Qt::Key_Return)
     {
-      QString numbertrack("TRACK/");
-      numbertrack.append(numbertrack.number(count));
-      numbertrack.append(".wav");
-      player->setMedia(QUrl::fromLocalFile(numbertrack));
-      player->setVolume(10);
-      player->play();
+      if(soundTrackCount==-1)
+      {
+        timetrackFlag=SND_TRACK;
+        soundTrackCount=0;
+        if(currRoutList->isEmpty()==false)
+        {
+            QString numbertrack("TRACK/");
+            numbertrack.append(currRoutList->at(soundTrackCount).routNumber);
+            numbertrack.append(".wav");
+            player->setMedia(QUrl::fromLocalFile(numbertrack));
+            player->setVolume(30);
+            player->play();
+        }
+      }
     }
 }
 /*
@@ -94,12 +103,32 @@ void MainWindow::playerStateChanged(QMediaPlayer::State state)
 {
     if(state==QMediaPlayer::StoppedState)
     {
-        QString numbertrack("TIME/");
-        numbertrack.append(numbertrack.number(12));
-        numbertrack.append("min.wav");
-        player->setMedia(QUrl::fromLocalFile(numbertrack));
-        player->setVolume(10);
-        player->play();
+        if(timetrackFlag==SND_TRACK)
+        {
+            timetrackFlag=SND_TIME;
+            QString numbertrack("TIME/");
+            numbertrack.append(currRoutList->at(soundTrackCount).timeLeft);
+            numbertrack.append("min.wav");
+            player->setMedia(QUrl::fromLocalFile(numbertrack));
+            player->setVolume(10);
+            player->play();
+        }
+        else if(timetrackFlag==SND_TIME)
+        {
+             timetrackFlag=SND_TRACK;
+            if(soundTrackCount < currRoutList->size())
+            {
+                QString numbertrack("TRACK/");
+                numbertrack.append(currRoutList->at(soundTrackCount).routNumber);
+                numbertrack.append(".wav");
+                player->setMedia(QUrl::fromLocalFile(numbertrack));
+                player->setVolume(30);
+                player->play();
+                soundTrackCount++;
+            }
+            else
+              soundTrackCount=-1;
+        }
     }
 
 }
@@ -110,12 +139,12 @@ void MainWindow::secTimerExpired(void)
 {
     QTime time=QTime::currentTime();
     QDate date=QDate::currentDate();
-
-    QString str=time.toString("hh:mm:ss");
+    QString str=time.toString("hh:mm");;
     ui->labelTime->setText(str);
     str=date.toString("dd MMMM yyyy");
     ui->labelDate->setText(str);
-    ui->label_7->setText(QString::number(buffIdx));
+    ui->frame_9->width();
+    ui->label_7->setText(QString::number(ui->frame_9->width()));
 }
 /*
  *

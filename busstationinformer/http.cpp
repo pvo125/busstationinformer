@@ -2,6 +2,8 @@
 #include <http.h>
 #include <QTextCodec>
 #include <QApplication>
+#include <QByteArray>
+#include <QFile>
 /*
  *
  */
@@ -22,11 +24,28 @@ void httpProcess::SendUpdateMsg(enum UpdateRoutList::REDRAW_MSG msg, void *pData
 /*
  *
  */
-httpProcess::httpProcess(QMainWindow *parent)
+httpProcess::httpProcess(QMainWindow *parent):
+    buffIndex{-1}
+   ,httpReqState{HTTP_REQ_IDLE}
 {
-   buffIndex=-1;
    parentWindow=parent;
-   url.setUrl("http://84.22.159.130:2929/tablo/?id=100&ver=1.0.2&csq=87&tpcb=42&tcpu=47&ext=27&up=3218&br=6 HTTP/1.0");
+
+   QFile file("appconfig.txt");
+   file.open(QIODevice::ReadOnly);
+   QByteArray array=file.readAll();
+   file.close();
+   int startIndex=array.indexOf("id=");
+   startIndex+=3;
+   QString id=array.mid(startIndex,3);
+   startIndex=array.indexOf("url=");
+   startIndex+=4;
+   QString server=array.mid(startIndex);
+   server.append("/tablo/?id=");
+   server.append(id);
+   server.append("&ver=1.0.2&csq=87&tpcb=42&tcpu=47&ext=27&up=3218&br=6 HTTP/1.0");
+
+   url.setUrl(server);
+  // url.setUrl("http://84.22.159.130:2929/tablo/?id=100&ver=1.0.2&csq=87&tpcb=42&tcpu=47&ext=27&up=3218&br=6 HTTP/1.0");
    request=QNetworkRequest(url);
    connect(&httpRequestTimer,SIGNAL(timeout()),this,SLOT(httpTimerExpired()));
    httpRequestTimer.setInterval(30000);
@@ -91,6 +110,7 @@ void httpProcess::httpFinished(void)
    if(buffIndex==0)  buffIndex=1;
    else              buffIndex=0;
    SendUpdateMsg(UpdateRoutList::UPDATE_ROUT_LIST,&buffIndex);
+   httpReqState=HTTP_REQ_COMPLETED;
 }
 /*
  *
@@ -110,9 +130,19 @@ void httpProcess::httpReadyRead(void)
  */
 void httpProcess::startRequest(void)
 {
-    reply=netManager.get(request);
-    connect(reply,SIGNAL(finished()),this,SLOT(httpFinished()));
-    connect(reply,SIGNAL(readyRead()),this,SLOT(httpReadyRead()));
+    if(httpReqState!=HTTP_REQ_BUSY)
+    {
+        reply=netManager.get(request);
+        connect(reply,SIGNAL(finished()),this,SLOT(httpFinished()));
+        connect(reply,SIGNAL(readyRead()),this,SLOT(httpReadyRead()));
+        httpReqState=HTTP_REQ_BUSY;
+    }
+    else if(httpReqState==HTTP_REQ_BUSY)
+    {
+      reply->abort();
+      reply->deleteLater();
+      httpReqState=HTTP_REQ_IDLE;
+    }
 }
 //
 void httpProcess::httpTimerExpired(void)
