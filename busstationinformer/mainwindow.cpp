@@ -90,7 +90,7 @@ void MainWindow::keyPressEvent(QKeyEvent *event)
             numbertrack.append(currRoutList->at(soundTrackCount).routNumber);
             numbertrack.append(".wav");
             player->setMedia(QUrl::fromLocalFile(numbertrack));
-            player->setVolume(30);
+            player->setVolume(50);
             player->play();
         }
       }
@@ -103,17 +103,8 @@ void MainWindow::playerStateChanged(QMediaPlayer::State state)
 {
     if(state==QMediaPlayer::StoppedState)
     {
-        if(timetrackFlag==SND_TRACK)
-        {
-            timetrackFlag=SND_TIME;
-            QString numbertrack("TIME/");
-            numbertrack.append(currRoutList->at(soundTrackCount).timeLeft);
-            numbertrack.append("min.wav");
-            player->setMedia(QUrl::fromLocalFile(numbertrack));
-            player->setVolume(10);
-            player->play();
-        }
-        else if(timetrackFlag==SND_TIME)
+loop:
+        if(timetrackFlag==SND_TIME)
         {
              timetrackFlag=SND_TRACK;
             if(soundTrackCount < currRoutList->size())
@@ -122,12 +113,27 @@ void MainWindow::playerStateChanged(QMediaPlayer::State state)
                 numbertrack.append(currRoutList->at(soundTrackCount).routNumber);
                 numbertrack.append(".wav");
                 player->setMedia(QUrl::fromLocalFile(numbertrack));
-                player->setVolume(30);
+                player->setVolume(50);
                 player->play();
-                soundTrackCount++;
             }
             else
               soundTrackCount=-1;
+        }
+        else if(timetrackFlag==SND_TRACK)
+        {
+            timetrackFlag=SND_TIME;
+            if(currRoutList->at(soundTrackCount).timeLeft.toInt() > 30)
+            {
+                soundTrackCount++;
+                goto loop;
+            }
+            QString numbertrack("TIME/");
+            numbertrack.append(currRoutList->at(soundTrackCount).timeLeft);
+            numbertrack.append("min.wav");
+            player->setMedia(QUrl::fromLocalFile(numbertrack));
+            player->setVolume(50);
+            player->play();
+            soundTrackCount++;
         }
     }
 
@@ -190,6 +196,8 @@ void MainWindow::routViewTimerExpired(void)
 
     if(currRoutList)
     {
+        if(routcount >= currRoutList->size())
+            return;
         ui->string1_routnumber->setText(currRoutList->at(routcount).routNumber);
         ui->string1_routname->setText(currRoutList->at(routcount).routName);
         ui->string1_lefttime->setText(currRoutList->at(routcount).timeLeft);
@@ -199,6 +207,8 @@ void MainWindow::routViewTimerExpired(void)
             ClearStringsRouts(2);
             return;
         }
+        if(routcount >= currRoutList->size())
+            return;
         ui->string2_routnumber->setText(currRoutList->at(routcount).routNumber);
         ui->string2_routname->setText(currRoutList->at(routcount).routName);
         ui->string2_lefttime->setText(currRoutList->at(routcount).timeLeft);
@@ -208,6 +218,8 @@ void MainWindow::routViewTimerExpired(void)
             ClearStringsRouts(3);
             return;
         }
+        if(routcount >= currRoutList->size())
+            return;
         ui->string3_routnumber->setText(currRoutList->at(routcount).routNumber);
         ui->string3_routname->setText(currRoutList->at(routcount).routName);
         ui->string3_lefttime->setText(currRoutList->at(routcount).timeLeft);
@@ -217,6 +229,8 @@ void MainWindow::routViewTimerExpired(void)
             ClearStringsRouts(4);
             return;
         }
+        if(routcount >= currRoutList->size())
+            return;
         ui->string4_routnumber->setText(currRoutList->at(routcount).routNumber);
         ui->string4_routname->setText(currRoutList->at(routcount).routName);
         ui->string4_lefttime->setText(currRoutList->at(routcount).timeLeft);
