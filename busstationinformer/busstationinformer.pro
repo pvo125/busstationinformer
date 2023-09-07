@@ -11,11 +11,13 @@ CONFIG += c++11
 SOURCES += \
     http.cpp \
     main.cpp \
-    mainwindow.cpp
+    mainwindow.cpp \
+    wiring.cpp
 
 HEADERS += \
     http.h \
-    mainwindow.h
+    mainwindow.h \
+    wiring.h
 
 FORMS += \
     mainwindow.ui

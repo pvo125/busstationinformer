@@ -1,0 +1,5 @@
+<RCC>
+    <qresource prefix="/">
+        <file>../../raspi/raspberry.png</file>
+    </qresource>
+</RCC>

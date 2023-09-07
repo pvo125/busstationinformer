@@ -12,31 +12,6 @@
 #include <QFile>
 
 
-class UpdateRoutList : public QEvent
-{
-public:
-   int msg;
-   void* pData;
-   enum REDRAW_MSG
-   {
-      UPDATE_ROUT_LIST=1,
-   };
-   UpdateRoutList(Type type) : QEvent(type) { }
-   ~UpdateRoutList();
-   void SetMsg(int p) { msg=p; }
-   int GetMsg(void) { return msg; }
-   void SetData(void *p) {pData=p;}
-   void * GetData(void) { return pData; }
-};
-
-
-
-
-
-
-
-
-
 
 class httpProcess: public QWidget{
 
@@ -50,23 +25,24 @@ public:
         HTTP_REQ_COMPLETED
     };
 
-    explicit httpProcess(QMainWindow *parent=nullptr);
+    explicit httpProcess(MainWindow *w=nullptr);
     ~httpProcess();
 private:
 
     int          buffIndex;
     enum HTTP_REQUEST_STATE  httpReqState;
 
-    QMainWindow           *parentWindow;
+    MainWindow           *mainW;          // // указатель на класс главного окна
     QTimer                httpRequestTimer;
     QNetworkAccessManager netManager;
     QUrl                  url;
     QNetworkReply         *reply;
     QNetworkRequest       request;
+    ERRORS errors;
 
     void startRequest(void);
     void parcingData(QByteArray &data,QVector<ROUT_ITEM> &list);
-    void SendUpdateMsg(enum UpdateRoutList::REDRAW_MSG msg, void *pData);
+    void SendBuffIdx(int *pIdx);
 
 public slots:
     void httpFinished();

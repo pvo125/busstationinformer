@@ -7,39 +7,63 @@
 /*
  *
  */
-UpdateRoutList::~UpdateRoutList()
+void httpProcess::SendBuffIdx(int *pIdx)
 {
-
+    RedrawMainWindow *ev=new RedrawMainWindow(QEvent::User);
+    ev->SendingMsg(RedrawMainWindow::UPDATE_ROUT_LIST);
+    ev->SendingData(pIdx);
+    QApplication::postEvent(mainW,ev);
 }
 /*
  *
  */
-void httpProcess::SendUpdateMsg(enum UpdateRoutList::REDRAW_MSG msg, void *pData)
-{
-    UpdateRoutList *ev=new UpdateRoutList(QEvent::User);
-    ev->SetMsg(msg);
-    ev->SetData(pData);
-    QApplication::postEvent(parentWindow,ev);
-}
-/*
- *
- */
-httpProcess::httpProcess(QMainWindow *parent):
+httpProcess::httpProcess(MainWindow *w):
     buffIndex{-1}
-   ,httpReqState{HTTP_REQ_IDLE}
+  ,httpReqState{HTTP_REQ_IDLE},mainW{w}
 {
-   parentWindow=parent;
-
+    errors.allbits=0;
+#ifdef Q_OS_WIN
    QFile file("appconfig.txt");
-   file.open(QIODevice::ReadOnly);
+#else
+   QFile file("/home/pi/app/appconfig.txt");
+#endif
+   if(file.open(QIODevice::ReadOnly)==false)
+   {
+       RedrawMainWindow *ev=new RedrawMainWindow(QEvent::User);
+       ev->SendingMsg(RedrawMainWindow::FILECONFIG_ERR_MESSAGE);
+       errors.fileconfigErr=1;
+       ev->SendingData((uint32_t*)&errors);
+       QApplication::postEvent(mainW,ev);
+       return;
+   }
    QByteArray array=file.readAll();
    file.close();
    int startIndex=array.indexOf("id=");
+   if(startIndex==-1)
+   {
+       RedrawMainWindow *ev=new RedrawMainWindow(QEvent::User);
+       ev->SendingMsg(RedrawMainWindow::FILECONFIG_ERR_MESSAGE);
+       errors.fileconfigErr=1;
+       ev->SendingData((uint32_t*)&errors);
+       QApplication::postEvent(mainW,ev);
+       return;
+   }
+
    startIndex+=3;
    QString id=array.mid(startIndex,3);
    startIndex=array.indexOf("url=");
+   if(startIndex==-1)
+   {
+       RedrawMainWindow *ev=new RedrawMainWindow(QEvent::User);
+       ev->SendingMsg(RedrawMainWindow::FILECONFIG_ERR_MESSAGE);
+       errors.fileconfigErr=1;
+       ev->SendingData((uint32_t*)&errors);
+       QApplication::postEvent(mainW,ev);
+       return;
+   }
    startIndex+=4;
    QString server=array.mid(startIndex);
+   //server.chop(2);  // delete \r\n
    server.append("/tablo/?id=");
    server.append(id);
    server.append("&ver=1.0.2&csq=87&tpcb=42&tcpu=47&ext=27&up=3218&br=6 HTTP/1.0");
@@ -48,7 +72,7 @@ httpProcess::httpProcess(QMainWindow *parent):
   // url.setUrl("http://84.22.159.130:2929/tablo/?id=100&ver=1.0.2&csq=87&tpcb=42&tcpu=47&ext=27&up=3218&br=6 HTTP/1.0");
    request=QNetworkRequest(url);
    connect(&httpRequestTimer,SIGNAL(timeout()),this,SLOT(httpTimerExpired()));
-   httpRequestTimer.setInterval(30000);
+   httpRequestTimer.setInterval(45000);
    httpRequestTimer.start();
    startRequest();
 }
@@ -100,29 +124,74 @@ void httpProcess::parcingData(QByteArray &data, QVector<ROUT_ITEM> &routlist)
        else
             break;
     }
+    if(!errors.noactiveRouts && routlist.isEmpty())
+    {
+        RedrawMainWindow *ev=new RedrawMainWindow(QEvent::User);
+        ev->SendingMsg(RedrawMainWindow::NO_ACTIVE_ROUTS);
+        errors.noactiveRouts=1;
+        ev->SendingData(&errors);
+        QApplication::postEvent(mainW,ev);
+    }
+    else if(errors.noactiveRouts && !routlist.isEmpty())
+    {
+        RedrawMainWindow *ev=new RedrawMainWindow(QEvent::User);
+        ev->SendingMsg(RedrawMainWindow::NO_ACTIVE_ROUTS);
+        errors.noactiveRouts=0;
+        ev->SendingData(&errors);
+        QApplication::postEvent(mainW,ev);
+    }
+
 }
 /*
  *
  */
 void httpProcess::httpFinished(void)
 {
-   reply->deleteLater();
-   if(buffIndex==0)  buffIndex=1;
-   else              buffIndex=0;
-   SendUpdateMsg(UpdateRoutList::UPDATE_ROUT_LIST,&buffIndex);
-   httpReqState=HTTP_REQ_COMPLETED;
+    if(!reply->error())
+    {
+        if(buffIndex==0)  buffIndex=1;
+        else              buffIndex=0;
+        SendBuffIdx(&buffIndex);
+        httpReqState=HTTP_REQ_COMPLETED;
+        if(errors.connectionErr==1)
+        {
+           RedrawMainWindow *ev=new RedrawMainWindow(QEvent::User);
+           ev->SendingMsg(RedrawMainWindow::CONNECT_ERR_MESSAGE);
+           errors.connectionErr=0;
+           ev->SendingData(&errors.allbits);
+           QApplication::postEvent(mainW,ev);
+        }
+    }
+    else
+    {
+       if(errors.connectionErr==0)
+       {
+            RedrawMainWindow *ev=new RedrawMainWindow(QEvent::User);
+            ev->SendingMsg(RedrawMainWindow::CONNECT_ERR_MESSAGE);
+            errors.connectionErr=1;
+            ev->SendingData(&errors.allbits);
+            QApplication::postEvent(mainW,ev);
+       }
+       httpReqState=HTTP_REQ_IDLE;
+    }
+    reply->deleteLater();
 }
 /*
  *
  */
 void httpProcess::httpReadyRead(void)
 {
-    QByteArray dataRaw;
-    dataRaw=reply->readAll();
-    if(buffIndex==0)   // 0
-        parcingData(dataRaw,*((MainWindow*)parentWindow)->routlistBack);
-    else            //1, -1
-        parcingData(dataRaw,*((MainWindow*)parentWindow)->routlistFront);
+     if(!reply->error())
+     {
+        QByteArray dataRaw;
+        dataRaw=reply->readAll();
+        if(buffIndex==0)   // 0
+            parcingData(dataRaw,*((MainWindow*)mainW)->routlistBack);
+        else            //1, -1
+            parcingData(dataRaw,*((MainWindow*)mainW)->routlistFront);
+     }
+     else
+       reply->abort();
 
 }
 /*
@@ -140,13 +209,15 @@ void httpProcess::startRequest(void)
     else if(httpReqState==HTTP_REQ_BUSY)
     {
       reply->abort();
-      reply->deleteLater();
       httpReqState=HTTP_REQ_IDLE;
     }
 }
 //
 void httpProcess::httpTimerExpired(void)
 {
-    startRequest();
-    httpRequestTimer.start(30000);
+    if(((MainWindow*)mainW)->soundTrackCount==-1)
+    {
+        startRequest();
+        httpRequestTimer.start(45000);
+    }
 }
