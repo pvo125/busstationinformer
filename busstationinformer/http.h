@@ -1,6 +1,5 @@
 #ifndef HTTP_H
 #define HTTP_H
-#include <QMainWindow>
 #include <QNetworkAccessManager>
 #include <QNetworkRequest>
 #include <QNetworkReply>

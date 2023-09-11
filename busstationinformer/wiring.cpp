@@ -105,7 +105,7 @@ void WiringPins::run(void)
       sscanf(temp,"t=%s",temp);
        // atof: changes string to float.
       value = atof(temp)/1000;
-      SendTempr(value);
+      SendTempr(&value);
 
 
       if(soundButtonReq==true)
@@ -132,7 +132,7 @@ void WiringPins::run(void)
           }
           soundButtonReq=false;
       }
-      delay(500);//sleep(1);
+      delay(500);
 #else
       sleep(1);
 #endif

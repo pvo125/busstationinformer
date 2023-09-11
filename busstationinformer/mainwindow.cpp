@@ -22,25 +22,25 @@ InfoMsg::InfoMsg(MainWindow *parent, QString &str,enum TYPE_NOTIFY type)
     count++;
 
     if(type==ERR_MSG)
-        MsgWindow.setStyleSheet("background-color: rgb(230, 150, 150)");
+        MsgWindow.setStyleSheet("background-color: rgb(230, 170, 170)");
     else if(type==WARN_MSG)
-        MsgWindow.setStyleSheet("background-color: rgb(220, 220, 100)");
+        MsgWindow.setStyleSheet("background-color: rgb(220, 220, 120)");
     else if(type==NOTIFY_MSG)
-        MsgWindow.setStyleSheet("background-color: rgb(170, 240, 170)");
+        MsgWindow.setStyleSheet("background-color: rgb(180, 240, 180)");
 
     MsgWindow.show();
 
     labelInfoMsg.setParent(&MsgWindow);
     labelInfoMsg.setGeometry(10,2,550,45);
-    font.setPointSize(32);
+    font.setPointSize(24);
     labelInfoMsg.setFont(font);
 
     if(type==ERR_MSG)
         labelInfoMsg.setText("Ошибка!!!");
     else if(type==WARN_MSG)
         labelInfoMsg.setText("Внимание!");
-    else if(type==NOTIFY_MSG)
-        labelInfoMsg.setText("Уведомление");
+    //else if(type==NOTIFY_MSG)
+    //    labelInfoMsg.setText("Уведомление");
     labelInfoMsg.setAlignment(Qt::AlignCenter);
     labelInfoMsg.show();
 
@@ -51,7 +51,7 @@ InfoMsg::InfoMsg(MainWindow *parent, QString &str,enum TYPE_NOTIFY type)
 
     labelMsg.setParent(&inframe);
     labelMsg.setGeometry(5,10,580,125);
-    font.setPointSize(28);
+    font.setPointSize(20);
     labelMsg.setFont(font);
     labelMsg.setText(str);
     labelMsg.setAlignment(Qt::AlignCenter);
@@ -146,7 +146,7 @@ void MainWindow::customEvent(QEvent *event)
             err.allbits=*(uint32_t*)((RedrawMainWindow*)event)->GetingData();
             if(err.fileconfigErr)
             {
-                QString s="Файл конфигурации не найден или содержит не верные данные!";
+                QString s="Файл конфигурации не найден или содержит неверные данные!";
                 FileConfigError=new InfoMsg(this,s,InfoMsg::ERR_MSG);
             }
         }
@@ -351,7 +351,7 @@ void MainWindow::secTimerExpired(void)
     }
     else
         ui->labelTempr->setText("----");
-    ui->labelTempr->setText(QString::number(buffIdx));
+   // ui->labelTempr->setText(QString::number(buffIdx));
 }
 /*
  *

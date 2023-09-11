@@ -7,8 +7,6 @@
 #include <fcntl.h>
 #include <dirent.h>
 #include <string.h>
-
-#include <QMainWindow>
 #include "mainwindow.h"
 #include <QFile>
 #include <pthread.h>
