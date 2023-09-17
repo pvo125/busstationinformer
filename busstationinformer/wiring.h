@@ -15,7 +15,7 @@ class WiringPins : public QWidget
 {
  Q_OBJECT
 public:
-    explicit WiringPins(MainWindow *w=nullptr);
+    explicit WiringPins(MainWindow *w=nullptr);  // w указатель на класс главного окна
     ~WiringPins();
 
     char path[50];
@@ -24,10 +24,12 @@ public:
     DIR *dirp;
     struct dirent *direntp;
     bool initCompletedFlag;
-    pthread_t wiringThread;
+    pthread_t buttonsThread;
+    pthread_t w1Thread;
 
     void SendTempr(float *pTempr);
-    void run(void);
+    void runW1(void);
+    void runButtons(void);
 
 };
 

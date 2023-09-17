@@ -4,13 +4,19 @@
     #include <wiringPi.h>
 #endif
 
-static MainWindow *mainWind;   // указатель на класс главного окна
 static bool soundButtonReq=false;
 
-void * threadFunc(void *arg)
+void * w1ThreadFunc(void *arg)
 {
    WiringPins *p=(WiringPins*)arg;
-   p->run();
+   p->runW1();
+   return 0;
+}
+
+void * buttonsThreadFunc(void *arg)
+{
+   WiringPins *p=(WiringPins*)arg;
+   p->runButtons();
    return 0;
 }
 
@@ -22,7 +28,7 @@ void ButtonISR(void)
 WiringPins::WiringPins(MainWindow *w):
     path{"/sys/bus/w1/devices/"},initCompletedFlag{false}
 {
-    mainWind=w;
+    setParent(w,Qt::Window);
     //mount the device:
 #ifndef Q_OS_WIN
     system("sudo modprobe w1-gpio");
@@ -56,16 +62,29 @@ WiringPins::WiringPins(MainWindow *w):
       pinMode(0,INPUT);
       pullUpDnControl(0,PUD_UP);
       wiringPiISR(0,INT_EDGE_FALLING,ButtonISR);
+      pinMode(2,OUTPUT);
 #endif
 
-      pthread_create(&wiringThread,0,threadFunc,this);
+//      struct sched_param param;
+//      pthread_attr_t attr;
+//      pthread_attr_init(&attr);
+//      pthread_attr_setstacksize(&attr, PTHREAD_STACK_MIN);
+//      pthread_attr_setschedpolicy(&attr, SCHED_FIFO);
+//      param.sched_priority = 80;
+//      pthread_attr_setschedparam(&attr, &param);
+//      pthread_attr_setinheritsched(&attr, PTHREAD_EXPLICIT_SCHED);
+      pthread_create(&w1Thread,NULL,w1ThreadFunc,this);
+      pthread_create(&buttonsThread,NULL,buttonsThreadFunc,this);
 }
 
 WiringPins::~WiringPins()
 {
-    int ret=pthread_cancel(wiringThread);
+    int ret=pthread_cancel(w1Thread);
     if(ret==0)
-      pthread_join(wiringThread,NULL);
+      pthread_join(w1Thread,NULL);
+    ret=pthread_cancel(buttonsThread);
+    if(ret==0)
+      pthread_join(buttonsThread,NULL);
 }
 
 /*
@@ -76,21 +95,21 @@ void WiringPins::SendTempr(float *pTempr)
     RedrawMainWindow *ev=new RedrawMainWindow((QEvent::Type)(QEvent::User));
     ev->SendingMsg(RedrawMainWindow::UPDATE_TEMPR);
     ev->SendingData(pTempr);
-    QApplication::postEvent(mainWind,ev);
+    QApplication::postEvent(parent(),ev);
 }
 /*
  *
  */
-void WiringPins::run(void)
+void WiringPins::runW1(void)
 {
+  int unused;
 #ifndef Q_OS_WIN
   char *temp;
   float value;
 #endif
 
-
-  pthread_setcancelstate(PTHREAD_CANCEL_ENABLE, NULL);
-  pthread_setcanceltype(PTHREAD_CANCEL_ASYNCHRONOUS,NULL);
+  pthread_setcancelstate(PTHREAD_CANCEL_ENABLE, &unused);
+  pthread_setcanceltype(PTHREAD_CANCEL_ASYNCHRONOUS,&unused);
   QFile file(path);
 
    while(1)
@@ -106,8 +125,25 @@ void WiringPins::run(void)
        // atof: changes string to float.
       value = atof(temp)/1000;
       SendTempr(&value);
+#else
+      sleep(1);
+#endif
+   }
+}
+/*
+ *
+ */
+void WiringPins::runButtons(void)
+{
+  int unused;
+  int state=0;
 
+  pthread_setcancelstate(PTHREAD_CANCEL_ENABLE, &unused);
+  pthread_setcanceltype(PTHREAD_CANCEL_ASYNCHRONOUS,&unused);
 
+   while(1)
+   {
+#ifndef Q_OS_WIN
       if(soundButtonReq==true)
       {
           delay(100);
@@ -116,28 +152,18 @@ void WiringPins::run(void)
             RedrawMainWindow *ev=new RedrawMainWindow((QEvent::Type)(QEvent::User));
             ev->SendingMsg(RedrawMainWindow::SOUND_BUTTON_PRESS);
             ev->SendingData(NULL);
-            QApplication::postEvent(mainWind,ev);
+            QApplication::postEvent(parent(),ev);
           }
           soundButtonReq=false;
       }
-      delay(500);
-      if(soundButtonReq==true)
-      {
-          if(digitalRead(0)==LOW)
-          {
-              RedrawMainWindow *ev=new RedrawMainWindow((QEvent::Type)(QEvent::User));
-              ev->SendingMsg(RedrawMainWindow::SOUND_BUTTON_PRESS);
-              ev->SendingData(NULL);
-              QApplication::postEvent(mainWind,ev);
-          }
-          soundButtonReq=false;
-      }
-      delay(500);
+
+      digitalWrite(2,state);
+      state ^=1;
+      delay(200);
 #else
       sleep(1);
 #endif
    }
 }
-
 
 

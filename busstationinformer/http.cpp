@@ -12,15 +12,16 @@ void httpProcess::SendBuffIdx(int *pIdx)
     RedrawMainWindow *ev=new RedrawMainWindow(QEvent::User);
     ev->SendingMsg(RedrawMainWindow::UPDATE_ROUT_LIST);
     ev->SendingData(pIdx);
-    QApplication::postEvent(mainW,ev);
+    QApplication::postEvent(parent(),ev);
 }
 /*
  *
  */
 httpProcess::httpProcess(MainWindow *w):
     buffIndex{-1}
-  ,httpReqState{HTTP_REQ_IDLE},mainW{w}
+  ,httpReqState{HTTP_REQ_IDLE}
 {
+    setParent(w,Qt::Window);
     errors.allbits=0;
 #ifdef Q_OS_WIN
    QFile file("appconfig.txt");
@@ -33,7 +34,7 @@ httpProcess::httpProcess(MainWindow *w):
        ev->SendingMsg(RedrawMainWindow::FILECONFIG_ERR_MESSAGE);
        errors.fileconfigErr=1;
        ev->SendingData((uint32_t*)&errors);
-       QApplication::postEvent(mainW,ev);
+       QApplication::postEvent(parent(),ev);
        return;
    }
    QByteArray array=file.readAll();
@@ -45,7 +46,7 @@ httpProcess::httpProcess(MainWindow *w):
        ev->SendingMsg(RedrawMainWindow::FILECONFIG_ERR_MESSAGE);
        errors.fileconfigErr=1;
        ev->SendingData((uint32_t*)&errors);
-       QApplication::postEvent(mainW,ev);
+       QApplication::postEvent(parent(),ev);
        return;
    }
 
@@ -58,7 +59,7 @@ httpProcess::httpProcess(MainWindow *w):
        ev->SendingMsg(RedrawMainWindow::FILECONFIG_ERR_MESSAGE);
        errors.fileconfigErr=1;
        ev->SendingData((uint32_t*)&errors);
-       QApplication::postEvent(mainW,ev);
+       QApplication::postEvent(parent(),ev);
        return;
    }
    startIndex+=4;
@@ -130,7 +131,7 @@ void httpProcess::parcingData(QByteArray &data, QVector<ROUT_ITEM> &routlist)
         ev->SendingMsg(RedrawMainWindow::NO_ACTIVE_ROUTS);
         errors.noactiveRouts=1;
         ev->SendingData(&errors);
-        QApplication::postEvent(mainW,ev);
+        QApplication::postEvent(parent(),ev);
     }
     else if(errors.noactiveRouts && !routlist.isEmpty())
     {
@@ -138,7 +139,7 @@ void httpProcess::parcingData(QByteArray &data, QVector<ROUT_ITEM> &routlist)
         ev->SendingMsg(RedrawMainWindow::NO_ACTIVE_ROUTS);
         errors.noactiveRouts=0;
         ev->SendingData(&errors);
-        QApplication::postEvent(mainW,ev);
+        QApplication::postEvent(parent(),ev);
     }
 
 }
@@ -159,7 +160,7 @@ void httpProcess::httpFinished(void)
            ev->SendingMsg(RedrawMainWindow::CONNECT_ERR_MESSAGE);
            errors.connectionErr=0;
            ev->SendingData(&errors.allbits);
-           QApplication::postEvent(mainW,ev);
+           QApplication::postEvent(parent(),ev);
         }
     }
     else
@@ -170,7 +171,7 @@ void httpProcess::httpFinished(void)
             ev->SendingMsg(RedrawMainWindow::CONNECT_ERR_MESSAGE);
             errors.connectionErr=1;
             ev->SendingData(&errors.allbits);
-            QApplication::postEvent(mainW,ev);
+            QApplication::postEvent(parent(),ev);
        }
        httpReqState=HTTP_REQ_IDLE;
     }
@@ -186,9 +187,9 @@ void httpProcess::httpReadyRead(void)
         QByteArray dataRaw;
         dataRaw=reply->readAll();
         if(buffIndex==0)   // 0
-            parcingData(dataRaw,*((MainWindow*)mainW)->routlistBack);
+            parcingData(dataRaw,*((MainWindow*)parent())->routlistBack);
         else            //1, -1
-            parcingData(dataRaw,*((MainWindow*)mainW)->routlistFront);
+            parcingData(dataRaw,*((MainWindow*)parent())->routlistFront);
      }
      else
        reply->abort();
@@ -215,7 +216,7 @@ void httpProcess::startRequest(void)
 //
 void httpProcess::httpTimerExpired(void)
 {
-    if(((MainWindow*)mainW)->soundTrackCount==-1)
+    if(((MainWindow*)parent())->soundTrackCount==-1)
     {
         startRequest();
         httpRequestTimer.start(45000);

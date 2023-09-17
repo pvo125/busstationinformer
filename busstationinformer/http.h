@@ -24,14 +24,13 @@ public:
         HTTP_REQ_COMPLETED
     };
 
-    explicit httpProcess(MainWindow *w=nullptr);
+    explicit httpProcess(MainWindow *w=nullptr);    //  w указатель на класс главного окна
     ~httpProcess();
 private:
 
     int          buffIndex;
     enum HTTP_REQUEST_STATE  httpReqState;
 
-    MainWindow           *mainW;          // // указатель на класс главного окна
     QTimer                httpRequestTimer;
     QNetworkAccessManager netManager;
     QUrl                  url;
