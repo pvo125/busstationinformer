@@ -1,4 +1,4 @@
-QT       += core gui multimedia network
+QT       += core gui multimedia network serialport
 
 greaterThan(QT_MAJOR_VERSION, 4): QT += widgets
 
@@ -12,14 +12,16 @@ SOURCES += \
     http.cpp \
     main.cpp \
     mainwindow.cpp \
+    modem.cpp \
     wiring.cpp
 
 HEADERS += \
     http.h \
     mainwindow.h \
+    modem.h \
     wiring.h
 
-LIBS += -lwiringPi
+unix:   LIBS += -lwiringPi
 
 
 FORMS += \
