@@ -16,6 +16,7 @@ private:
     QSerialPort serial;
     QQueue<QString> urc;
     QQueue<QString> gsm_str;
+    QString inputMsg;
 
 private slots:
      void RecieveBytes();

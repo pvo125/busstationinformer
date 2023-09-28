@@ -33,21 +33,47 @@ BGS2_E::~BGS2_E()
 void BGS2_E::RecieveBytes()
 {
     QByteArray arr=serial.readAll();
-    if(!foundNewLine)
+    if(foundNewLine)
     {
-       if(arr.contains("\r\n")==true)
-       {
-           arr.indexOf("\r\n");
-           foundNewLine=true;
+       int index=arr.indexOf("\r\n",0);
+       if(index!=-1)    // нет "\r\n" в принятом сообщении
+       { // приняли промежуточный пакет байт строки.
+         //  добавляем в контейнер принятого сообщения и выходим из слота до принятия "\r\n"
+         inputMsg.append(arr);
+       }
+       else // есть "\r\n"  в принятом сообщении
+       {// записываем принятый хвост в контейнер принятого сообщения
+           inputMsg.chop(index);            // delete \r\n в конце сообщения
+           gsm_str.enqueue(inputMsg);   // записываем принятое сообщение в очередь
+
+           // подготовим контейнер для принятия следующего сообщения
+           foundNewLine=false;
+           inputMsg.clear();
        }
     }
-    else if(arr.contains("\r\n"))
+    else
     {
+       int index=arr.indexOf("\r\n",0);
+       if(index!=-1)
+       {
+          QByteArray temp=arr.right(index+2);
+          index=temp.indexOf("\r\n",0);
+          if(index!=-1)
+          {
+              inputMsg.chop(index);            // delete \r\n в конце сообщения
+              gsm_str.enqueue(inputMsg);   // записываем принятое сообщение в очередь
 
+              // подготовим контейнер для принятия следующего сообщения
+              foundNewLine=false;
+              inputMsg.clear();
+          }
+          else
+          {
+            //  добавляем в контейнер принятого сообщения и выходим из слота до принятия "\r\n"
+            inputMsg.append(temp);
+            foundNewLine=true;
+          }
+
+       }
     }
-
-
-
-
-
 }
