@@ -2,7 +2,7 @@
 #define MODEM_H
 
 #include <QtSerialPort/QSerialPort>
-
+#include <QQueue>
 
 class BGS2_E : public QObject
 {
@@ -12,11 +12,13 @@ public:
     ~BGS2_E();
 
 private:
-     QSerialPort *serial;
+    bool foundNewLine;
+    QSerialPort serial;
+    QQueue<QString> urc;
+    QQueue<QString> gsm_str;
 
 private slots:
      void RecieveBytes();
-
 };
 
 
