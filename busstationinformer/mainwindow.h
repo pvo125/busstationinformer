@@ -27,6 +27,7 @@ typedef union
         uint32_t fileconfigErr   :1;   // ошибка
         uint32_t soundrtackErr   :1;
         uint32_t noactiveRouts   :1;   // уведомление
+        uint32_t comportConnErr  :1;   // ошибка открытия COMx порта
     };
     uint32_t allbits;
 }ERRORS;
@@ -34,6 +35,7 @@ typedef union
 class httpProcess;
 class WiringPins;
 class MainWindow;
+class BGS2_E;
 
 
 class InfoMsg : QWidget
@@ -71,7 +73,9 @@ public:
       UPDATE_TEMPR,
       SOUND_BUTTON_PRESS,
       FILECONFIG_ERR_MESSAGE,
-      CONNECT_ERR_MESSAGE
+      CONNECT_ERR_MESSAGE,
+      GSM_SIGNAL,
+      COMPORT_ERR_MESSAGE,
    };
    RedrawMainWindow(Type type) : QEvent(type) { }
    ~RedrawMainWindow() {}
@@ -115,6 +119,8 @@ public:
     float onewiretempr;
     QBuffer *buffer;
     QByteArray *arr;
+
+    BGS2_E *gsmMod;
 
     InfoMsg *NoConnectWarning;      // Предупреждение
     InfoMsg *FileConfigError;       // Ошибка

@@ -7,6 +7,7 @@
 //#include <QtNetwork>
 #include "http.h"
 #include "wiring.h"
+#include "modem.h"
 
 int InfoMsg::count=0;
 
@@ -168,6 +169,18 @@ void MainWindow::customEvent(QEvent *event)
           }
         }
         break;
+        case RedrawMainWindow::COMPORT_ERR_MESSAGE:
+        {
+            ERRORS  err;
+            err.allbits=*(uint32_t*)((RedrawMainWindow*)event)->GetingData();
+            if(err.comportConnErr)
+            {
+                QString s="Ошибка открытия COM порта!Порт занят или не настроен!\nВызов 112 недоступен!";
+                FileConfigError=new InfoMsg(this,s,InfoMsg::ERR_MSG);
+            }
+        }
+        break;
+
         default:
         break;
       }
@@ -175,12 +188,13 @@ void MainWindow::customEvent(QEvent *event)
     QWidget::customEvent(event);
 }
 
-
 MainWindow::MainWindow(QWidget *parent)
     : QMainWindow(parent)
     , ui(new Ui::MainWindow)
 {
     ui->setupUi(this);
+
+    gsmMod=new BGS2_E(this);
 
     NoConnectWarning=NULL;
     FileConfigError=NULL;
@@ -213,6 +227,7 @@ MainWindow::MainWindow(QWidget *parent)
 
     player = new QMediaPlayer;
     connect(player, SIGNAL(stateChanged(QMediaPlayer::State)), this, SLOT(playerStateChanged(QMediaPlayer::State)));
+
 }
 /*
  *
@@ -224,6 +239,7 @@ MainWindow::~MainWindow()
     if(NoActiveRoutsNotify)
         delete NoActiveRoutsNotify;
 
+    delete gsmMod;
     delete w_pins;
     player->stop();
     delete player;
