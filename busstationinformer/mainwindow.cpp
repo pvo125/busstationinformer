@@ -3,11 +3,14 @@
 
 #include <QDate>
 #include <QTime>
+#include <QThread>
 //#include<QNetworkAccessManager>
 //#include <QtNetwork>
 #include "http.h"
 #include "wiring.h"
 #include "modem.h"
+
+extern void * GSMThreadFunc(void *arg);
 
 int InfoMsg::count=0;
 
@@ -194,8 +197,6 @@ MainWindow::MainWindow(QWidget *parent)
 {
     ui->setupUi(this);
 
-    gsmMod=new BGS2_E(this);
-
     NoConnectWarning=NULL;
     FileConfigError=NULL;
     NoActiveRoutsNotify=NULL;
@@ -228,6 +229,7 @@ MainWindow::MainWindow(QWidget *parent)
     player = new QMediaPlayer;
     connect(player, SIGNAL(stateChanged(QMediaPlayer::State)), this, SLOT(playerStateChanged(QMediaPlayer::State)));
 
+    pthread_create(&gsmThread,NULL,GSMThreadFunc,this);
 }
 /*
  *
@@ -239,7 +241,11 @@ MainWindow::~MainWindow()
     if(NoActiveRoutsNotify)
         delete NoActiveRoutsNotify;
 
-    delete gsmMod;
+    int ret=pthread_cancel(gsmThread);
+    if(ret==0)
+      pthread_join(gsmThread,NULL);
+    delete gsmmodule;
+
     delete w_pins;
     player->stop();
     delete player;

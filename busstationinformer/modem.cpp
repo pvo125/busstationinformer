@@ -5,9 +5,18 @@
 
 void * GSMThreadFunc(void *arg)
 {
-   BGS2_E *p=(BGS2_E*)arg;
-   p->runThread();
-   return 0;
+  int unused;
+  pthread_setcancelstate(PTHREAD_CANCEL_ENABLE, &unused);
+  pthread_setcanceltype(PTHREAD_CANCEL_ASYNCHRONOUS,&unused);
+
+  MainWindow *w=(MainWindow*)arg;
+  w->gsmmodule=new BGS2_E(w);
+  while(1)
+   {
+       w->gsmmodule->AT_CSQ();
+       sleep(1);
+
+   }
 }
 
 BGS2_E::BGS2_E(MainWindow *w)
@@ -34,21 +43,15 @@ BGS2_E::BGS2_E(MainWindow *w)
         //ErrorMsg("COM ПОРТ ЗАНЯТ!");      // Выводим Message
     }
     /*настроим интервальный таймер для измерений таймаутов ожидания пакетом от модуля */
-  // delayTimer.setSingleShot(true);
-  // connect(&delayTimer,SIGNAL(timeout()),w,SLOT(delayTimerExpired()));
+   gsmDelayTimer.setSingleShot(true);
+   connect(&gsmDelayTimer,SIGNAL(timeout()),w,SLOT(delayTimerExpired()));
 
-    /*сигнал readyRead привязываем к объекту QSerialPort serial, слот RecieveBytes() к данному классу окна MainWindow*/
-    QObject::connect(&serial,SIGNAL(readyRead()),this,SLOT(RecieveBytes()));
-
-    pthread_create(&gsmThread,NULL,GSMThreadFunc,this);
-    this->moveToThread((QThread*)gsmThread);
+   /*сигнал readyRead привязываем к объекту QSerialPort serial, слот RecieveBytes() к данному классу окна MainWindow*/
+   connect(&serial,SIGNAL(readyRead()),this,SLOT(RecieveBytes()));
 }
 
 BGS2_E::~BGS2_E()
 {
-  int ret=pthread_cancel(gsmThread);
-  if(ret==0)
-    pthread_join(gsmThread,NULL);
   serial.clear();
   serial.close();
 }
@@ -105,18 +108,6 @@ void BGS2_E::RecieveBytes()
 /*
  *
  */
-void BGS2_E::runThread(void)
-{
-  int unused;
-  pthread_setcancelstate(PTHREAD_CANCEL_ENABLE, &unused);
-  pthread_setcanceltype(PTHREAD_CANCEL_ASYNCHRONOUS,&unused);
-
-  for(;;)
-  {
-    AT_CSQ();
-    sleep(1);
-  }
-}
 void BGS2_E::delayTimerExpired(void)
 {
     timeExpiredFlag=1;
@@ -128,7 +119,7 @@ int BGS2_E::WaitForString(const char *s,QString &waitedStr,int timeout)
 {
     QString str;
     timeExpiredFlag=0;
-   // delayTimer.start(timeout);
+    gsmDelayTimer.start(timeout);
     do
     {
        if(!gsm_str.isEmpty())
@@ -136,7 +127,7 @@ int BGS2_E::WaitForString(const char *s,QString &waitedStr,int timeout)
            str=gsm_str.dequeue();
            if(str.compare(s)==0)
            {
-               //delayTimer.stop();
+               gsmDelayTimer.stop();
                break;
            }
            else // если вытащили из контейнера очереди не то что ожидали значит это URC проскочил

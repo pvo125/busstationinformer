@@ -12,25 +12,34 @@ class BGS2_E : public QWidget
 {
     Q_OBJECT
 public:
+    enum GSM_CMD_IDX
+    {
+      CSQ_CMD,
+
+      TOTAL_CMD
+    };
+
     explicit BGS2_E(MainWindow *w=nullptr);
     ~BGS2_E();
-     void runThread(void);
+     QSerialPort serial;
 
-    pthread_t gsmThread;
+     int AT_CSQ(void);
 private:
+    int indexCmdChain;
     bool foundNewLine;
     bool timeExpiredFlag;
     ERRORS errors;
 
-
-    QSerialPort serial;
     QQueue<QString> urc;
     QQueue<QString> gsm_str;
     QString inputMsg;
-    QTimer delayTimer;
+    QTimer gsmDelayTimer;
+
+
+    void gsmCommandChain(int cmdIdx);
 
     int WaitForString(const char *s,QString  &, int timeout);
-    int AT_CSQ(void);
+
 
 private slots:
      void RecieveBytes();

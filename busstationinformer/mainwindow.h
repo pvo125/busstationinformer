@@ -120,7 +120,8 @@ public:
     QBuffer *buffer;
     QByteArray *arr;
 
-    BGS2_E *gsmMod;
+    BGS2_E *gsmmodule;
+    pthread_t gsmThread;
 
     InfoMsg *NoConnectWarning;      // Предупреждение
     InfoMsg *FileConfigError;       // Ошибка
