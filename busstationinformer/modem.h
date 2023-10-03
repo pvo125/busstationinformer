@@ -8,42 +8,38 @@
 #include <unistd.h>
 #include "mainwindow.h"
 
-class BGS2_E : public QWidget
+class BGS2_E : public QObject
 {
     Q_OBJECT
 public:
-    enum GSM_CMD_IDX
-    {
-      CSQ_CMD,
-
-      TOTAL_CMD
-    };
 
     explicit BGS2_E(MainWindow *w=nullptr);
     ~BGS2_E();
-     QSerialPort serial;
-
-     int AT_CSQ(void);
-private:
-    int indexCmdChain;
-    bool foundNewLine;
+    QSerialPort serial;
     bool timeExpiredFlag;
+
+private:
+    MainWindow *mainW;
+    int timerdelay;
+    bool foundNewLine;
+
     ERRORS errors;
 
     QQueue<QString> urc;
     QQueue<QString> gsm_str;
     QString inputMsg;
-    QTimer gsmDelayTimer;
 
+    int AT_CSQ(void);
 
-    void gsmCommandChain(int cmdIdx);
-
+    void gsmTimerStart(int tout);
+    void gsmTimerStop(void);
     int WaitForString(const char *s,QString  &, int timeout);
 
 
-private slots:
-     void RecieveBytes();
-     void delayTimerExpired();
+public slots:
+    void run();
+    void RecieveBytes();
+
 };
 
 

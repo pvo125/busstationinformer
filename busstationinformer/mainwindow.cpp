@@ -183,7 +183,17 @@ void MainWindow::customEvent(QEvent *event)
             }
         }
         break;
-
+        case RedrawMainWindow::GSM_TIMER_START:
+        {
+          int timerdelay=*(int*)((RedrawMainWindow*)event)->GetingData();
+          gsmDelayTimer.start(timerdelay);
+        }
+        break;
+        case RedrawMainWindow::GSM_TIMER_STOP:
+        {
+          gsmDelayTimer.stop();
+        }
+        break;
         default:
         break;
       }
@@ -196,6 +206,13 @@ MainWindow::MainWindow(QWidget *parent)
     , ui(new Ui::MainWindow)
 {
     ui->setupUi(this);
+
+    gsmThread=new QThread();
+    gsmmodule=new BGS2_E(this);
+    connect(gsmThread, &QThread::started, gsmmodule, &BGS2_E::run);
+    gsmmodule->moveToThread(gsmThread);
+    gsmmodule->serial.moveToThread(gsmThread);
+    gsmThread->start();
 
     NoConnectWarning=NULL;
     FileConfigError=NULL;
@@ -218,6 +235,10 @@ MainWindow::MainWindow(QWidget *parent)
     routlistFront=new QVector<ROUT_ITEM>();
     routlistBack=new QVector<ROUT_ITEM>();
 
+    /*настроим интервальный таймер для измерений таймаутов ожидания пакетом от модуля */
+    gsmDelayTimer.setSingleShot(true);
+    connect(&gsmDelayTimer,SIGNAL(timeout()),SLOT(delayTimerExpired()));
+
     secTimer.setInterval(1000);
     connect(&secTimer,SIGNAL(timeout()),SLOT(secTimerExpired()));
     secTimer.start();
@@ -229,7 +250,6 @@ MainWindow::MainWindow(QWidget *parent)
     player = new QMediaPlayer;
     connect(player, SIGNAL(stateChanged(QMediaPlayer::State)), this, SLOT(playerStateChanged(QMediaPlayer::State)));
 
-    pthread_create(&gsmThread,NULL,GSMThreadFunc,this);
 }
 /*
  *
@@ -241,9 +261,6 @@ MainWindow::~MainWindow()
     if(NoActiveRoutsNotify)
         delete NoActiveRoutsNotify;
 
-    int ret=pthread_cancel(gsmThread);
-    if(ret==0)
-      pthread_join(gsmThread,NULL);
     delete gsmmodule;
 
     delete w_pins;
@@ -503,4 +520,10 @@ void MainWindow::routViewTimerExpired(void)
 /*
  *
  */
-
+void MainWindow::delayTimerExpired(void)
+{
+    gsmmodule->timeExpiredFlag=1;
+}
+//
+//
+//

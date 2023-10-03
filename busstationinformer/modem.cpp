@@ -3,27 +3,43 @@
 #include <QApplication>
 #include <QThread>
 
-void * GSMThreadFunc(void *arg)
+
+void BGS2_E::run(void)
 {
-  int unused;
-  pthread_setcancelstate(PTHREAD_CANCEL_ENABLE, &unused);
-  pthread_setcanceltype(PTHREAD_CANCEL_ASYNCHRONOUS,&unused);
 
-  MainWindow *w=(MainWindow*)arg;
-  w->gsmmodule=new BGS2_E(w);
   while(1)
-   {
-       w->gsmmodule->AT_CSQ();
-       sleep(1);
+  {
+     AT_CSQ();
+     sleep(1);
+     AT_CSQ();
+  }
 
-   }
 }
+/*
+ *
+ */
+//void * GSMThreadFunc(void *arg)
+//{
+//  int unused;
+//  pthread_setcancelstate(PTHREAD_CANCEL_ENABLE, &unused);
+//  pthread_setcanceltype(PTHREAD_CANCEL_ASYNCHRONOUS,&unused);
+
+//  MainWindow *w=(MainWindow*)arg;
+//  w->gsmmodule=new BGS2_E(w);
+//  while(1)
+//   {
+//       w->gsmmodule->AT_CSQ();
+//       sleep(1);
+
+//   }
+//}
 
 BGS2_E::BGS2_E(MainWindow *w)
 {
     //setParent(w,Qt::Window);
+    mainW=w;
     foundNewLine=false;
-    serial.setPortName("COM5");  // устанавливаеми имя порта с виджета выбора доступных COM в системе
+    serial.setPortName("COM3");  // устанавливаеми имя порта с виджета выбора доступных COM в системе
     if(serial.open(QIODevice::ReadWrite))          // открываем данный порт с проверкой
     {// если открыли успешно продолжаем насройки порта
         serial.setBaudRate(QSerialPort::Baud9600);  /*speed=9600;*/
@@ -38,14 +54,10 @@ BGS2_E::BGS2_E(MainWindow *w)
         ev->SendingMsg(RedrawMainWindow::COMPORT_ERR_MESSAGE);
         errors.comportConnErr=1;
         ev->SendingData((uint32_t*)&errors);
-        QApplication::postEvent(w/*parent()*/,ev);
+        QApplication::postEvent(mainW,ev);
         return;
         //ErrorMsg("COM ПОРТ ЗАНЯТ!");      // Выводим Message
     }
-    /*настроим интервальный таймер для измерений таймаутов ожидания пакетом от модуля */
-   gsmDelayTimer.setSingleShot(true);
-   connect(&gsmDelayTimer,SIGNAL(timeout()),w,SLOT(delayTimerExpired()));
-
    /*сигнал readyRead привязываем к объекту QSerialPort serial, слот RecieveBytes() к данному классу окна MainWindow*/
    connect(&serial,SIGNAL(readyRead()),this,SLOT(RecieveBytes()));
 }
@@ -108,9 +120,23 @@ void BGS2_E::RecieveBytes()
 /*
  *
  */
-void BGS2_E::delayTimerExpired(void)
+void BGS2_E::gsmTimerStart(int tout)
 {
-    timeExpiredFlag=1;
+    RedrawMainWindow *ev=new RedrawMainWindow((QEvent::Type)(QEvent::User));
+    ev->SendingMsg(RedrawMainWindow::GSM_TIMER_START);
+    timerdelay=tout;
+    ev->SendingData(&timerdelay);
+    QApplication::postEvent(mainW,ev);
+}
+/*
+ *
+ */
+void BGS2_E::gsmTimerStop(void)
+{
+    RedrawMainWindow *ev=new RedrawMainWindow((QEvent::Type)(QEvent::User));
+    ev->SendingMsg(RedrawMainWindow::GSM_TIMER_STOP);
+    ev->SendingData(NULL);
+    QApplication::postEvent(mainW,ev);
 }
 /*
  *
@@ -119,7 +145,7 @@ int BGS2_E::WaitForString(const char *s,QString &waitedStr,int timeout)
 {
     QString str;
     timeExpiredFlag=0;
-    gsmDelayTimer.start(timeout);
+    gsmTimerStart(timeout);
     do
     {
        if(!gsm_str.isEmpty())
@@ -127,7 +153,7 @@ int BGS2_E::WaitForString(const char *s,QString &waitedStr,int timeout)
            str=gsm_str.dequeue();
            if(str.compare(s)==0)
            {
-               gsmDelayTimer.stop();
+               gsmTimerStop();
                break;
            }
            else // если вытащили из контейнера очереди не то что ожидали значит это URC проскочил
@@ -153,10 +179,10 @@ int BGS2_E::AT_CSQ(void)
     int result;
     int index;
 
-    serial.write("AT+CSQ\r");
-    if(WaitForString("+CSQ:",response,300)<0)
+    result=serial.write("AT+CSQ\r");
+    if(WaitForString("+CSQ:",response,3000)<0)
         return -1;
-    if(WaitForString("OK",response,300)<0)
+    if(WaitForString("OK",response,3000)<0)
         return -1;
     index=response.indexOf(":");
     s=response.left(index);

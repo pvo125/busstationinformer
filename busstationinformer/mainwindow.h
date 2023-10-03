@@ -10,7 +10,7 @@
 
 #include <QFrame>
 #include <QLabel>
-
+#include <QThread>
 
 typedef struct
 {
@@ -76,6 +76,8 @@ public:
       CONNECT_ERR_MESSAGE,
       GSM_SIGNAL,
       COMPORT_ERR_MESSAGE,
+      GSM_TIMER_START,
+      GSM_TIMER_STOP
    };
    RedrawMainWindow(Type type) : QEvent(type) { }
    ~RedrawMainWindow() {}
@@ -109,6 +111,7 @@ public:
     enum SND_TIMETRACK timetrackFlag;
     int buffIdx;
     httpProcess *http;
+    QTimer gsmDelayTimer;
     QTimer secTimer;
     QTimer routViewTimer;
     QMediaPlayer *player;
@@ -121,7 +124,7 @@ public:
     QByteArray *arr;
 
     BGS2_E *gsmmodule;
-    pthread_t gsmThread;
+    QThread *gsmThread;
 
     InfoMsg *NoConnectWarning;      // Предупреждение
     InfoMsg *FileConfigError;       // Ошибка
@@ -140,6 +143,8 @@ private:
 protected:
     virtual void keyPressEvent(QKeyEvent *ev);
 
+public slots:
+    void delayTimerExpired(void);
 private slots:
     void secTimerExpired(void);
     void routViewTimerExpired(void);
