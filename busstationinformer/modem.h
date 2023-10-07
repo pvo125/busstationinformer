@@ -30,11 +30,12 @@ public:
     QSerialPort *serial;
     QTimer *gsmtimer;
     QEventLoop *loop;
+    bool threadExitRequest;
 private:
     MainWindow *mainW;
     int timerdelay;
     bool flagMsgComplete;
-    bool threadExit;
+
     ERRORS errors;
     GSM_PARAM gsmParam;
     QQueue<QString> urc;
@@ -59,7 +60,7 @@ public slots:
     void gsmProcess();
     void RecieveBytes(void);
     void gsmTimerExpired(void);
-
+    void errorHandle(QSerialPort::SerialPortError error);
 
 
 };

@@ -186,8 +186,12 @@ void MainWindow::customEvent(QEvent *event)
             err.allbits=*(uint32_t*)((RedrawMainWindow*)event)->GetingData();
             if(err.comportOpenErr)
             {
-                QString s="Ошибка открытия COM порта!Порт занят или не настроен!\nВызов 112 недоступен!";
-                COMPortOpenError=new InfoMsg(this,s,InfoMsg::ERR_MSG);
+                if(!COMPortOpenError)
+                {
+                    QString s="Ошибка открытия COM порта!Порт занят или не настроен!\nВызов 112 недоступен!";
+                    COMPortOpenError=new InfoMsg(this,s,InfoMsg::ERR_MSG);
+                }
+                break;
             }
             if(err.comportConnErr)
             {

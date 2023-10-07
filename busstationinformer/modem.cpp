@@ -26,13 +26,20 @@ void BGS2_E::gsmProcess(void)
   if(PortInit(serial)!=-1)
   {
     ATE();
-    while(1)
+    while(!threadExitRequest)
     {
       thread()->msleep(1000);
+
+      if(threadExitRequest)
+          break;
       gsmParam.netReg=AT_CREG();
       if(gsmParam.netReg==0)
           continue;
+
+      if(threadExitRequest)
+          break;
       gsmParam.rssi=AT_CSQ();
+
       SendGsmParam(&gsmParam);
     }
   }
@@ -44,10 +51,12 @@ void BGS2_E::gsmProcess(void)
 BGS2_E::BGS2_E(MainWindow *w)
 {
     mainW=w;
+    threadExitRequest=0;
     errors.allbits=0;
     flagMsgComplete=true;
     gsmParam.netReg=-1;
     gsmParam.rssi=99;
+
     serial=NULL;
     gsmtimer=NULL;
     loop=NULL;
@@ -105,6 +114,7 @@ int BGS2_E::PortInit(QSerialPort *ser)
     connect(gsmtimer,SIGNAL(timeout()),SLOT(gsmTimerExpired()));
    /*сигнал readyRead привязываем к объекту QSerialPort serial, слот RecieveBytes() к данному классу окна MainWindow*/
    connect(ser,SIGNAL(readyRead()),this,SLOT(RecieveBytes()));
+   connect(ser,SIGNAL(errorOccurred(QSerialPort::SerialPortError)),this,SLOT(errorHandle(QSerialPort::SerialPortError)));
    return 0;
 }
 /*
@@ -119,6 +129,23 @@ void BGS2_E::gsmTimerExpired(void)
         SendGsmErrors(&errors);
     }
 }
+void BGS2_E::errorHandle(QSerialPort::SerialPortError error)
+{
+    if(error==QSerialPort::ResourceError)
+    {
+        if(!errors.comportOpenErr)
+        {
+            errors.comportOpenErr=1;
+            SendGsmErrors(&errors);
+
+            gsmParam.netReg=-1;
+            gsmParam.rssi=99;
+            SendGsmParam(&gsmParam);
+        }
+        threadExitRequest=1;
+    }
+}
+
 /*
  *
  */
@@ -204,10 +231,12 @@ int BGS2_E::WaitForString(const char *s,QString *waitedStr,int timeout)
           loop->processEvents(QEventLoop::ExcludeUserInputEvents);
           thread()->msleep(5);
        }
-    }while(timerdelay);
+    }while(timerdelay && !threadExitRequest);
     if(!timerdelay)
+    {
       return -1;
-    if(errors.comportConnErr)
+    }
+    else if(errors.comportConnErr)
     {
         errors.comportConnErr=0;
         SendGsmErrors(&errors);
@@ -224,10 +253,7 @@ int BGS2_E::AT(void)
 {
     serial->write("AT\r");
     if(WaitForString("OK",NULL,GSM_TOUT)<0)
-    {
-        thread()->msleep(GSM_CMD_PAUSE);
         return -1;
-    }
     thread()->msleep(GSM_CMD_PAUSE);
     return 1;
 }
@@ -239,7 +265,6 @@ int BGS2_E::ATE(void)
     serial->write("ATE0\r");
     if(WaitForString("OK",NULL,GSM_TOUT)<0)
     {
-        thread()->msleep(GSM_CMD_PAUSE);
         return -1;
     }
     thread()->msleep(GSM_CMD_PAUSE);
@@ -258,15 +283,9 @@ int BGS2_E::AT_CREG(void)
 
     serial->write("AT+CREG?\r");
     if(WaitForString("+CREG:",&response,GSM_TOUT)<0)
-    {
-        thread()->msleep(GSM_CMD_PAUSE);
         return -1;
-    }
     if(WaitForString("OK",NULL,GSM_TOUT)<0)
-    {
-        thread()->msleep(GSM_CMD_PAUSE);
         return -1;
-    }
     startIdx=response.indexOf(',');
     startIdx+=1;
     s=response.mid(startIdx,1);
@@ -294,15 +313,9 @@ int BGS2_E::AT_CSQ(void)
 
     serial->write("AT+CSQ\r");
     if(WaitForString("+CSQ:",&response,GSM_TOUT)<0)
-    {
-        thread()->msleep(GSM_CMD_PAUSE);
         return -1;
-    }
     if(WaitForString("OK",NULL,GSM_TOUT)<0)
-    {
-        thread()->msleep(GSM_CMD_PAUSE);
         return -1;
-    }
     startIdx=response.indexOf(':');
     startIdx+=2;
     endIdx=response.indexOf(',');
