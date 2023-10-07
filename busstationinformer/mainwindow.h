@@ -27,7 +27,8 @@ typedef union
         uint32_t fileconfigErr   :1;   // ошибка
         uint32_t soundrtackErr   :1;
         uint32_t noactiveRouts   :1;   // уведомление
-        uint32_t comportConnErr  :1;   // ошибка открытия COMx порта
+        uint32_t comportOpenErr  :1;   // ошибка открытия COMx порта
+        uint32_t comportConnErr  :1;   // ошибка соединения с gsm модулем.
     };
     uint32_t allbits;
 }ERRORS;
@@ -74,8 +75,9 @@ public:
       SOUND_BUTTON_PRESS,
       FILECONFIG_ERR_MESSAGE,
       CONNECT_ERR_MESSAGE,
-      GSM_SIGNAL,
+
       COMPORT_ERR_MESSAGE,
+      GSM_PARAM,
       GSM_TIMER_START,
       GSM_TIMER_STOP
    };
@@ -111,7 +113,6 @@ public:
     enum SND_TIMETRACK timetrackFlag;
     int buffIdx;
     httpProcess *http;
-    QTimer gsmDelayTimer;
     QTimer secTimer;
     QTimer routViewTimer;
     QMediaPlayer *player;
@@ -126,25 +127,24 @@ public:
     BGS2_E *gsmmodule;
     QThread *gsmThread;
 
+    InfoMsg *FileConfigError;       // Ошибка открытия или чтение данных файла конфига
+    InfoMsg *COMPortOpenError;      // Ошибка открытия COM порта при старте программы
+
     InfoMsg *NoConnectWarning;      // Предупреждение
-    InfoMsg *FileConfigError;       // Ошибка
+    InfoMsg *COMPortConnWarning;     // предупреждение об обрыве связи с gsm модулем
+
     InfoMsg *NoActiveRoutsNotify;   // Уведомление
     //ERRORS  errors;
 
     bool routStringEmptyFlag[4];
-
-protected:
-    void customEvent(QEvent *event);
-
 private:
     Ui::MainWindow *ui;
-
+    int CalcGsmSignalPower(int rssi);
 
 protected:
     virtual void keyPressEvent(QKeyEvent *ev);
+    void customEvent(QEvent *event);
 
-public slots:
-    void delayTimerExpired(void);
 private slots:
     void secTimerExpired(void);
     void routViewTimerExpired(void);

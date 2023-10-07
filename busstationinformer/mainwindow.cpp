@@ -69,15 +69,23 @@ InfoMsg::~InfoMsg()
     if(InfoMsg::count>0)
       InfoMsg::count--;
 }
-
-
+//
+int MainWindow::CalcGsmSignalPower(int rssi)
+{
+    if(rssi >=26)   return 5;
+    else if(rssi <=25 && rssi >=20) return 4;
+    else if(rssi <=19 && rssi >=14) return 3;
+    else if(rssi <=13 && rssi >=8)  return 2;
+    else
+      return 1;
+}
+//
 void MainWindow::customEvent(QEvent *event)
 {
     if(event->type()==QEvent::User)
     {
       switch(((RedrawMainWindow*)event)->GetingMsg())
       {
-
         case RedrawMainWindow::UPDATE_ROUT_LIST:
         {
           int *pIdxBuff=(int*)((RedrawMainWindow*)event)->GetingData();
@@ -176,22 +184,54 @@ void MainWindow::customEvent(QEvent *event)
         {
             ERRORS  err;
             err.allbits=*(uint32_t*)((RedrawMainWindow*)event)->GetingData();
-            if(err.comportConnErr)
+            if(err.comportOpenErr)
             {
                 QString s="Ошибка открытия COM порта!Порт занят или не настроен!\nВызов 112 недоступен!";
-                FileConfigError=new InfoMsg(this,s,InfoMsg::ERR_MSG);
+                COMPortOpenError=new InfoMsg(this,s,InfoMsg::ERR_MSG);
+            }
+            if(err.comportConnErr)
+            {
+                QString s="Обрыв линии связи c GSM модемом!";
+                COMPortConnWarning=new InfoMsg(this,s,InfoMsg::WARN_MSG);
+            }
+            else
+            {
+                if(COMPortConnWarning)
+                  delete COMPortConnWarning;
+                COMPortConnWarning=NULL;
             }
         }
         break;
-        case RedrawMainWindow::GSM_TIMER_START:
+        case RedrawMainWindow::GSM_PARAM:
         {
-          int timerdelay=*(int*)((RedrawMainWindow*)event)->GetingData();
-          gsmDelayTimer.start(timerdelay);
-        }
-        break;
-        case RedrawMainWindow::GSM_TIMER_STOP:
-        {
-          gsmDelayTimer.stop();
+            GSM_PARAM  *param;
+            param=(GSM_PARAM*)((RedrawMainWindow*)event)->GetingData();
+            if(param->netReg==-1 || param->rssi==99)
+            {
+               ui->gsmSignalgraphicsView->setStyleSheet(QString::fromUtf8("border-image: url(:/gsm_bitmaps/gsm_noreg.png);"));
+            }
+            else
+            {
+               int temp=CalcGsmSignalPower(param->rssi);
+               switch(temp)
+               {
+                  case 1:
+                      ui->gsmSignalgraphicsView->setStyleSheet(QString::fromUtf8("border-image: url(:/gsm_bitmaps/gsm_1.png);"));
+                  break;
+                  case 2:
+                      ui->gsmSignalgraphicsView->setStyleSheet(QString::fromUtf8("border-image: url(:/gsm_bitmaps/gsm_2.png);"));
+                  break;
+                  case 3:
+                      ui->gsmSignalgraphicsView->setStyleSheet(QString::fromUtf8("border-image: url(:/gsm_bitmaps/gsm_3.png);"));
+                  break;
+                  case 4:
+                      ui->gsmSignalgraphicsView->setStyleSheet(QString::fromUtf8("border-image: url(:/gsm_bitmaps/gsm_4.png);"));
+                  break;
+                  case 5:
+                      ui->gsmSignalgraphicsView->setStyleSheet(QString::fromUtf8("border-image: url(:/gsm_bitmaps/gsm_5.png);"));
+                  break;
+                }
+            }
         }
         break;
         default:
@@ -200,7 +240,7 @@ void MainWindow::customEvent(QEvent *event)
     }
     QWidget::customEvent(event);
 }
-
+//
 MainWindow::MainWindow(QWidget *parent)
     : QMainWindow(parent)
     , ui(new Ui::MainWindow)
@@ -209,14 +249,21 @@ MainWindow::MainWindow(QWidget *parent)
 
     gsmThread=new QThread();
     gsmmodule=new BGS2_E(this);
-    connect(gsmThread, &QThread::started, gsmmodule, &BGS2_E::run);
+    connect(gsmThread, &QThread::started, gsmmodule, &BGS2_E::gsmProcess);
+    // По завершению выходим из потока, и удаляем рабочий класс
+    connect(gsmmodule, SIGNAL(finishedPort()), gsmThread, SLOT(quit()));
+    connect(gsmThread, SIGNAL(finished()), gsmmodule, SLOT(deleteLater()));
+
+    // Удаляем поток, после выполнения операции
+    connect(gsmmodule, SIGNAL(finishedPort()), gsmThread, SLOT(deleteLater()));
     gsmmodule->moveToThread(gsmThread);
-    gsmmodule->serial.moveToThread(gsmThread);
     gsmThread->start();
 
     NoConnectWarning=NULL;
     FileConfigError=NULL;
     NoActiveRoutsNotify=NULL;
+    COMPortConnWarning=NULL;
+    COMPortOpenError=NULL;
 
     routStringEmptyFlag[0]=true;
     routStringEmptyFlag[1]=true;
@@ -235,10 +282,6 @@ MainWindow::MainWindow(QWidget *parent)
     routlistFront=new QVector<ROUT_ITEM>();
     routlistBack=new QVector<ROUT_ITEM>();
 
-    /*настроим интервальный таймер для измерений таймаутов ожидания пакетом от модуля */
-    gsmDelayTimer.setSingleShot(true);
-    connect(&gsmDelayTimer,SIGNAL(timeout()),SLOT(delayTimerExpired()));
-
     secTimer.setInterval(1000);
     connect(&secTimer,SIGNAL(timeout()),SLOT(secTimerExpired()));
     secTimer.start();
@@ -249,10 +292,8 @@ MainWindow::MainWindow(QWidget *parent)
 
     player = new QMediaPlayer;
     connect(player, SIGNAL(stateChanged(QMediaPlayer::State)), this, SLOT(playerStateChanged(QMediaPlayer::State)));
-
 }
 /*
- *
  */
 MainWindow::~MainWindow()
 {
@@ -260,8 +301,13 @@ MainWindow::~MainWindow()
         delete FileConfigError;
     if(NoActiveRoutsNotify)
         delete NoActiveRoutsNotify;
+    if(COMPortOpenError)
+        delete COMPortOpenError;
 
-    delete gsmmodule;
+    if(gsmmodule)
+    {
+        emit gsmmodule->finishedPort(); //delete gsmmodule;
+    }
 
     delete w_pins;
     player->stop();
@@ -390,7 +436,7 @@ void MainWindow::secTimerExpired(void)
     }
     else
         ui->labelTempr->setText("----");
-   // ui->labelTempr->setText(QString::number(buffIdx));
+    // ui->labelTempr->setText(QString::number(buffIdx));
 }
 /*
  *
@@ -520,10 +566,6 @@ void MainWindow::routViewTimerExpired(void)
 /*
  *
  */
-void MainWindow::delayTimerExpired(void)
-{
-    gsmmodule->timeExpiredFlag=1;
-}
 //
 //
 //

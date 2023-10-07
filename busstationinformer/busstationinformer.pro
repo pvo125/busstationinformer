@@ -31,3 +31,6 @@ FORMS += \
 qnx: target.path = /tmp/$${TARGET}/bin
 else: unix:!android: target.path = /home/pi/app
 !isEmpty(target.path): INSTALLS += target
+
+RESOURCES += \
+    gsmSignal.qrc

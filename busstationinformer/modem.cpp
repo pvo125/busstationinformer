@@ -3,157 +3,194 @@
 #include <QApplication>
 #include <QThread>
 
-
-void BGS2_E::run(void)
+void BGS2_E::SendGsmParam(GSM_PARAM *pgsm)
 {
+    RedrawMainWindow *ev=new RedrawMainWindow((QEvent::Type)(QEvent::User));
+    ev->SendingMsg(RedrawMainWindow::GSM_PARAM);
+    ev->SendingData((uint32_t*)pgsm);
+    QApplication::postEvent(mainW,ev);
+}
+void BGS2_E::SendGsmErrors(ERRORS *err)
+{
+    RedrawMainWindow *ev=new RedrawMainWindow((QEvent::Type)(QEvent::User));
+    ev->SendingMsg(RedrawMainWindow::COMPORT_ERR_MESSAGE);
+    ev->SendingData((uint32_t*)err);
+    QApplication::postEvent(mainW,ev);
+}
 
-  while(1)
+void BGS2_E::gsmProcess(void)
+{
+  serial=new QSerialPort(this);
+  loop=new QEventLoop();
+  thread()->msleep(5000);
+  if(PortInit(serial)!=-1)
   {
-     AT_CSQ();
-     sleep(1);
-     AT_CSQ();
+    ATE();
+    while(1)
+    {
+      thread()->msleep(1000);
+      gsmParam.netReg=AT_CREG();
+      if(gsmParam.netReg==0)
+          continue;
+      gsmParam.rssi=AT_CSQ();
+      SendGsmParam(&gsmParam);
+    }
   }
-
+ emit finishedPort();
 }
 /*
  *
  */
-//void * GSMThreadFunc(void *arg)
-//{
-//  int unused;
-//  pthread_setcancelstate(PTHREAD_CANCEL_ENABLE, &unused);
-//  pthread_setcanceltype(PTHREAD_CANCEL_ASYNCHRONOUS,&unused);
-
-//  MainWindow *w=(MainWindow*)arg;
-//  w->gsmmodule=new BGS2_E(w);
-//  while(1)
-//   {
-//       w->gsmmodule->AT_CSQ();
-//       sleep(1);
-
-//   }
-//}
-
 BGS2_E::BGS2_E(MainWindow *w)
 {
-    //setParent(w,Qt::Window);
     mainW=w;
-    foundNewLine=false;
-    serial.setPortName("COM3");  // устанавливаеми имя порта с виджета выбора доступных COM в системе
-    if(serial.open(QIODevice::ReadWrite))          // открываем данный порт с проверкой
-    {// если открыли успешно продолжаем насройки порта
-        serial.setBaudRate(QSerialPort::Baud9600);  /*speed=9600;*/
-        serial.setDataBits(QSerialPort::Data8);
-        serial.setParity(QSerialPort::EvenParity);
-        serial.setFlowControl(QSerialPort::NoFlowControl);
-        serial.setStopBits(QSerialPort::OneStop);
-    }
-    else        // если порт открылся с ошибкой значит занят или не рабочий.
-    {
-        RedrawMainWindow *ev=new RedrawMainWindow((QEvent::Type)(QEvent::User));
-        ev->SendingMsg(RedrawMainWindow::COMPORT_ERR_MESSAGE);
-        errors.comportConnErr=1;
-        ev->SendingData((uint32_t*)&errors);
-        QApplication::postEvent(mainW,ev);
-        return;
-        //ErrorMsg("COM ПОРТ ЗАНЯТ!");      // Выводим Message
-    }
-   /*сигнал readyRead привязываем к объекту QSerialPort serial, слот RecieveBytes() к данному классу окна MainWindow*/
-   connect(&serial,SIGNAL(readyRead()),this,SLOT(RecieveBytes()));
-}
+    errors.allbits=0;
+    flagMsgComplete=true;
+    gsmParam.netReg=-1;
+    gsmParam.rssi=99;
+    serial=NULL;
+    gsmtimer=NULL;
+    loop=NULL;
 
+}
+/*
+ *
+ */
 BGS2_E::~BGS2_E()
 {
-  serial.clear();
-  serial.close();
+  if(serial->isOpen())
+  {
+      serial->clear();
+      serial->close();
+  }
+  if(serial)
+  {
+    delete serial;
+    serial=NULL;
+  }
+  if(loop)
+  {
+      delete loop;
+      loop=NULL;
+  }
+  if(gsmtimer)
+  {
+      delete gsmtimer;
+      gsmtimer=NULL;
+  }
+  mainW->gsmmodule=NULL;
 }
 /*
  *
  */
-void BGS2_E::RecieveBytes()
+int BGS2_E::PortInit(QSerialPort *ser)
 {
-    QByteArray arr=serial.readAll();
-    if(foundNewLine)
+    ser->setPortName("COM3");  // устанавливаеми имя порта с виджета выбора доступных COM в системе
+    ser->setBaudRate(QSerialPort::Baud9600);  /*speed=9600;*/
+    ser->setDataBits(QSerialPort::Data8);
+    ser->setParity(QSerialPort::EvenParity);
+    ser->setFlowControl(QSerialPort::NoFlowControl);
+    ser->setStopBits(QSerialPort::OneStop);
+    if(!ser->open(QIODevice::ReadWrite))          // открываем данный порт с проверкой
+        // если порт открылся с ошибкой значит занят или не рабочий.
     {
-       int index=arr.indexOf("\r\n",0);
-       if(index!=-1)    // нет "\r\n" в принятом сообщении
-       { // приняли промежуточный пакет байт строки.
-         //  добавляем в контейнер принятого сообщения и выходим из слота до принятия "\r\n"
-         inputMsg.append(arr);
-       }
-       else // есть "\r\n"  в принятом сообщении
-       {// записываем принятый хвост в контейнер принятого сообщения
-           inputMsg.chop(index);            // delete \r\n в конце сообщения
-           gsm_str.enqueue(inputMsg);   // записываем принятое сообщение в очередь
-
-           // подготовим контейнер для принятия следующего сообщения
-           foundNewLine=false;
-           inputMsg.clear();
-       }
+        errors.comportOpenErr=1;
+        SendGsmErrors(&errors);
+        return -1;
+        //ErrorMsg("COM ПОРТ ЗАНЯТ!");      // Выводим Message
     }
-    else
+    /*настроим интервальный таймер для измерений таймаутов ожидания пакетом от модуля */
+    gsmtimer=new QTimer(this);
+    gsmtimer->setSingleShot(true);
+    connect(gsmtimer,SIGNAL(timeout()),SLOT(gsmTimerExpired()));
+   /*сигнал readyRead привязываем к объекту QSerialPort serial, слот RecieveBytes() к данному классу окна MainWindow*/
+   connect(ser,SIGNAL(readyRead()),this,SLOT(RecieveBytes()));
+   return 0;
+}
+/*
+ *
+ */
+void BGS2_E::gsmTimerExpired(void)
+{
+    timerdelay=0;
+    if(!errors.comportConnErr)
     {
-       int index=arr.indexOf("\r\n",0);
-       if(index!=-1)
-       {
-          QByteArray temp=arr.right(index+2);
-          index=temp.indexOf("\r\n",0);
-          if(index!=-1)
-          {
-              inputMsg.chop(index);            // delete \r\n в конце сообщения
-              gsm_str.enqueue(inputMsg);   // записываем принятое сообщение в очередь
-
-              // подготовим контейнер для принятия следующего сообщения
-              foundNewLine=false;
-              inputMsg.clear();
-          }
-          else
-          {
-            //  добавляем в контейнер принятого сообщения и выходим из слота до принятия "\r\n"
-            inputMsg.append(temp);
-            foundNewLine=true;
-          }
-
-       }
+        errors.comportConnErr=1;
+        SendGsmErrors(&errors);
     }
 }
 /*
  *
  */
-void BGS2_E::gsmTimerStart(int tout)
+void BGS2_E::RecieveBytes(void)
 {
-    RedrawMainWindow *ev=new RedrawMainWindow((QEvent::Type)(QEvent::User));
-    ev->SendingMsg(RedrawMainWindow::GSM_TIMER_START);
-    timerdelay=tout;
-    ev->SendingData(&timerdelay);
-    QApplication::postEvent(mainW,ev);
+    int startIdx=0,endIdx,size;
+    QByteArray temp;
+    QByteArray arr=serial->readAll();
+
+    size=arr.size();
+    do
+      {
+        if(flagMsgComplete)
+        {
+            flagMsgComplete=false;
+            startIdx=arr.indexOf("\r\n",startIdx);
+            endIdx=arr.indexOf("\r\n",startIdx+2);
+            if(startIdx < 0)
+                break;
+            else if(endIdx > 0)
+            {
+                temp=arr.mid(startIdx+2,endIdx-startIdx-2);
+                gsm_str.enqueue(temp);   // записываем принятое сообщение в очередь
+
+                flagMsgComplete=true;
+                startIdx=(endIdx+2);
+            }
+            else
+            {
+                inputMsg.append(temp);
+                break;
+            }
+        }
+        else
+        {
+            endIdx=arr.indexOf("\r\n",0);
+            if(endIdx > 0)
+            {
+                temp=arr.mid(0,endIdx);
+                inputMsg.append(temp);
+                gsm_str.enqueue(inputMsg);   // записываем принятое сообщение в очередь
+                inputMsg.clear();
+                flagMsgComplete=true;
+                startIdx=(endIdx+2);
+            }
+            else
+            {
+                inputMsg.append(temp);
+                break;
+            }
+        }
+     }while(startIdx < size);
 }
 /*
  *
  */
-void BGS2_E::gsmTimerStop(void)
-{
-    RedrawMainWindow *ev=new RedrawMainWindow((QEvent::Type)(QEvent::User));
-    ev->SendingMsg(RedrawMainWindow::GSM_TIMER_STOP);
-    ev->SendingData(NULL);
-    QApplication::postEvent(mainW,ev);
-}
-/*
- *
- */
-int BGS2_E::WaitForString(const char *s,QString &waitedStr,int timeout)
+//
+//
+//
+int BGS2_E::WaitForString(const char *s,QString *waitedStr,int timeout)
 {
     QString str;
-    timeExpiredFlag=0;
-    gsmTimerStart(timeout);
+    timerdelay=1;
+    gsmtimer->start(timeout*10);
     do
     {
        if(!gsm_str.isEmpty())
        {
            str=gsm_str.dequeue();
-           if(str.compare(s)==0)
+           if(str.contains(s))
            {
-               gsmTimerStop();
+               gsmtimer->stop();
                break;
            }
            else // если вытащили из контейнера очереди не то что ожидали значит это URC проскочил
@@ -161,36 +198,121 @@ int BGS2_E::WaitForString(const char *s,QString &waitedStr,int timeout)
               urc.enqueue(str);
            }
        }
+       else
+       {
+          //QCoreApplication::processEvents(QEventLoop::ExcludeUserInputEvents);
+          loop->processEvents(QEventLoop::ExcludeUserInputEvents);
+          thread()->msleep(5);
+       }
+    }while(timerdelay);
+    if(!timerdelay)
+      return -1;
+    if(errors.comportConnErr)
+    {
+        errors.comportConnErr=0;
+        SendGsmErrors(&errors);
     }
-    while(!timeExpiredFlag);
-    if(timeExpiredFlag)
-        return -1;
-    waitedStr=str;
+
+    if(waitedStr)
+        waitedStr->append(str);
     return 0;
 }
 /*
  *
  */
+int BGS2_E::AT(void)
+{
+    serial->write("AT\r");
+    if(WaitForString("OK",NULL,GSM_TOUT)<0)
+    {
+        thread()->msleep(GSM_CMD_PAUSE);
+        return -1;
+    }
+    thread()->msleep(GSM_CMD_PAUSE);
+    return 1;
+}
+/*
+ *
+ */
+int BGS2_E::ATE(void)
+{
+    serial->write("ATE0\r");
+    if(WaitForString("OK",NULL,GSM_TOUT)<0)
+    {
+        thread()->msleep(GSM_CMD_PAUSE);
+        return -1;
+    }
+    thread()->msleep(GSM_CMD_PAUSE);
+    return 1;
+}
+/*
+ *
+ */
+int BGS2_E::AT_CREG(void)
+{
+    bool ok;
+    QString response;
+    QString s;
+    int result;
+    int startIdx;
+
+    serial->write("AT+CREG?\r");
+    if(WaitForString("+CREG:",&response,GSM_TOUT)<0)
+    {
+        thread()->msleep(GSM_CMD_PAUSE);
+        return -1;
+    }
+    if(WaitForString("OK",NULL,GSM_TOUT)<0)
+    {
+        thread()->msleep(GSM_CMD_PAUSE);
+        return -1;
+    }
+    startIdx=response.indexOf(',');
+    startIdx+=1;
+    s=response.mid(startIdx,1);
+    result=s.toUInt(&ok);
+    thread()->msleep(GSM_CMD_PAUSE);
+    if(ok==true)
+    {
+        if(result==1 || result==5)
+            return result;
+        else    return 0;
+    }
+    else
+     return -1;
+}
+/*
+ *
+ **/
 int BGS2_E::AT_CSQ(void)
 {
     bool ok;
     QString response;
     QString s;
     int result;
-    int index;
+    int startIdx,endIdx;
 
-    result=serial.write("AT+CSQ\r");
-    if(WaitForString("+CSQ:",response,3000)<0)
+    serial->write("AT+CSQ\r");
+    if(WaitForString("+CSQ:",&response,GSM_TOUT)<0)
+    {
+        thread()->msleep(GSM_CMD_PAUSE);
         return -1;
-    if(WaitForString("OK",response,3000)<0)
+    }
+    if(WaitForString("OK",NULL,GSM_TOUT)<0)
+    {
+        thread()->msleep(GSM_CMD_PAUSE);
         return -1;
-    index=response.indexOf(":");
-    s=response.left(index);
+    }
+    startIdx=response.indexOf(':');
+    startIdx+=2;
+    endIdx=response.indexOf(',');
+    s=response.mid(startIdx,endIdx-startIdx);
     result=s.toUInt(&ok);
+    thread()->msleep(GSM_CMD_PAUSE);
     if(ok==true)
-      return result;
+     return result;
     else
-      return -1;
+     return -1;
 }
 
 /*

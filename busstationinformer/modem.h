@@ -7,6 +7,18 @@
 #include <pthread.h>
 #include <unistd.h>
 #include "mainwindow.h"
+#include <QEventLoop>
+
+#define GSM_CMD_PAUSE   100
+#define GSM_TOUT        300
+
+typedef struct
+{
+   uint8_t rssi;
+   int8_t netReg;
+
+}GSM_PARAM;
+
 
 class BGS2_E : public QObject
 {
@@ -15,30 +27,40 @@ public:
 
     explicit BGS2_E(MainWindow *w=nullptr);
     ~BGS2_E();
-    QSerialPort serial;
-    bool timeExpiredFlag;
-
+    QSerialPort *serial;
+    QTimer *gsmtimer;
+    QEventLoop *loop;
 private:
     MainWindow *mainW;
     int timerdelay;
-    bool foundNewLine;
-
+    bool flagMsgComplete;
+    bool threadExit;
     ERRORS errors;
-
+    GSM_PARAM gsmParam;
     QQueue<QString> urc;
     QQueue<QString> gsm_str;
     QString inputMsg;
 
+
+
+    void SendGsmParam(GSM_PARAM *);
+    void SendGsmErrors(ERRORS *);
+    int PortInit(QSerialPort *);
+    int WaitForString(const char *s, QString *, int timeout);
+    int AT(void);
+    int ATE(void);
+    int AT_CREG(void);
     int AT_CSQ(void);
 
-    void gsmTimerStart(int tout);
-    void gsmTimerStop(void);
-    int WaitForString(const char *s,QString  &, int timeout);
-
+signals:
+    void finishedPort();
 
 public slots:
-    void run();
-    void RecieveBytes();
+    void gsmProcess();
+    void RecieveBytes(void);
+    void gsmTimerExpired(void);
+
+
 
 };
 
