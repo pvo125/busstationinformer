@@ -5,6 +5,7 @@
 #endif
 
 static bool soundButtonReq=false;
+static bool call112ButtonReq=false;
 
 void * w1ThreadFunc(void *arg)
 {
@@ -20,9 +21,14 @@ void * buttonsThreadFunc(void *arg)
    return 0;
 }
 
-void ButtonISR(void)
+void ButtonSoundplayISR(void)
 {
     soundButtonReq=true;
+}
+
+void ButtonCall112_ISR(void)
+{
+   call112ButtonReq=true;
 }
 
 WiringPins::WiringPins(MainWindow *w):
@@ -57,11 +63,17 @@ WiringPins::WiringPins(MainWindow *w):
       strcat(path,"/w1_slave");
       initCompletedFlag=true;
 
-      /* Настройка вывода GPIO_0 на детекцию кнопки по заднему фронту */
       wiringPiSetup();
+       /* Настройка вывода GPIO_0 на детекцию кнопки озвучки маршрутов по заднему фронту  */
       pinMode(0,INPUT);
       pullUpDnControl(0,PUD_UP);
-      wiringPiISR(0,INT_EDGE_FALLING,ButtonISR);
+      wiringPiISR(0,INT_EDGE_FALLING,ButtonSoundplay_ISR);
+
+      /* Настройка вывода GPIO_1 на детекцию кнопки "вызова 112" по заднему фронту */
+      pinMode(1,INPUT);
+      pullUpDnControl(1,PUD_UP);
+      wiringPiISR(1,INT_EDGE_FALLING,ButtonCall112_ISR);
+
       pinMode(2,OUTPUT);
 #endif
 
@@ -155,6 +167,18 @@ void WiringPins::runButtons(void)
             QApplication::postEvent(parent(),ev);
           }
           soundButtonReq=false;
+      }
+      if(call112ButtonReq==true)
+      {
+          delay(100);
+          if(digitalRead(1)==LOW)
+          {
+            RedrawMainWindow *ev=new RedrawMainWindow((QEvent::Type)(QEvent::User));
+            ev->SendingMsg(RedrawMainWindow::CALL112_BUTTON_PRESS);
+            ev->SendingData(NULL);
+            QApplication::postEvent(parent(),ev);
+          }
+          call112ButtonReq=false;
       }
 
       digitalWrite(2,state);

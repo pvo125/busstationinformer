@@ -73,6 +73,7 @@ public:
       NO_ACTIVE_ROUTS,
       UPDATE_TEMPR,
       SOUND_BUTTON_PRESS,
+      CALL112_BUTTON_PRESS,
       FILECONFIG_ERR_MESSAGE,
       CONNECT_ERR_MESSAGE,
 
@@ -134,6 +135,7 @@ public:
     InfoMsg *COMPortConnWarning;     // предупреждение об обрыве связи с gsm модулем
 
     InfoMsg *NoActiveRoutsNotify;   // Уведомление
+    InfoMsg *Call112Notify;   // Уведомление
     //ERRORS  errors;
 
     bool routStringEmptyFlag[4];

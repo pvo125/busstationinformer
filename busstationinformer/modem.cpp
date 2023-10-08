@@ -26,22 +26,34 @@ void BGS2_E::gsmProcess(void)
   if(PortInit(serial)!=-1)
   {
     ATE();
+    AT_SM20(0);
     while(!threadExitRequest)
     {
-      thread()->msleep(1000);
-
-      if(threadExitRequest)
-          break;
+      thread()->msleep(5000);
       gsmParam.netReg=AT_CREG();
       if(gsmParam.netReg==0)
           continue;
 
-      if(threadExitRequest)
-          break;
+      if(callRequest)
+      {
+          callRequest=false;
+          ATD("+79527486813");
+          callState=1;
+      }
+      else if(hangUp)
+      {
+         hangUp=false;
+         ATH();
+         callState=0;
+      }
       gsmParam.rssi=AT_CSQ();
+      ProcessURC();
+      if(!threadExitRequest)
+        SendGsmParam(&gsmParam);
 
-      SendGsmParam(&gsmParam);
     }
+    if(callState)
+       ATH();
   }
  emit finishedPort();
 }
@@ -51,6 +63,10 @@ void BGS2_E::gsmProcess(void)
 BGS2_E::BGS2_E(MainWindow *w)
 {
     mainW=w;
+
+    callRequest=false;
+    hangUp=false;
+
     threadExitRequest=0;
     errors.allbits=0;
     flagMsgComplete=true;
@@ -205,12 +221,48 @@ void BGS2_E::RecieveBytes(void)
 //
 //
 //
+int BGS2_E::ProcessURC(void)
+{
+   QString str;
+   if(threadExitRequest)
+       return -1;
+   while(!urc.isEmpty() && !threadExitRequest)
+   {
+      str=urc.dequeue();
+      if(str.contains("RING"))
+      {
+         ATH();
+      }
+      else if(str.contains("NO DIALTONE"))
+      {
+
+      }
+      else if(str.contains("BUSY"))
+      {
+        hangUp=true;
+      }
+      else if(str.contains("NO CARRIER"))
+      {
+        hangUp=true;
+      }
+      else
+      {
+
+
+      }
+   }
+   return 0;
+
+}
+/*
+ *
+ */
 int BGS2_E::WaitForString(const char *s,QString *waitedStr,int timeout)
 {
     QString str;
     timerdelay=1;
     gsmtimer->start(timeout*10);
-    do
+    while(timerdelay && !threadExitRequest)
     {
        if(!gsm_str.isEmpty())
        {
@@ -231,7 +283,7 @@ int BGS2_E::WaitForString(const char *s,QString *waitedStr,int timeout)
           loop->processEvents(QEventLoop::ExcludeUserInputEvents);
           thread()->msleep(5);
        }
-    }while(timerdelay && !threadExitRequest);
+    }
     if(!timerdelay)
     {
       return -1;
@@ -251,6 +303,8 @@ int BGS2_E::WaitForString(const char *s,QString *waitedStr,int timeout)
  */
 int BGS2_E::AT(void)
 {
+    if(threadExitRequest)
+        return -1;
     serial->write("AT\r");
     if(WaitForString("OK",NULL,GSM_TOUT)<0)
         return -1;
@@ -262,11 +316,11 @@ int BGS2_E::AT(void)
  */
 int BGS2_E::ATE(void)
 {
+    if(threadExitRequest)
+        return -1;
     serial->write("ATE0\r");
     if(WaitForString("OK",NULL,GSM_TOUT)<0)
-    {
         return -1;
-    }
     thread()->msleep(GSM_CMD_PAUSE);
     return 1;
 }
@@ -281,6 +335,8 @@ int BGS2_E::AT_CREG(void)
     int result;
     int startIdx;
 
+    if(threadExitRequest)
+        return -1;
     serial->write("AT+CREG?\r");
     if(WaitForString("+CREG:",&response,GSM_TOUT)<0)
         return -1;
@@ -311,6 +367,8 @@ int BGS2_E::AT_CSQ(void)
     int result;
     int startIdx,endIdx;
 
+    if(threadExitRequest)
+        return -1;
     serial->write("AT+CSQ\r");
     if(WaitForString("+CSQ:",&response,GSM_TOUT)<0)
         return -1;
@@ -327,11 +385,52 @@ int BGS2_E::AT_CSQ(void)
     else
      return -1;
 }
-
 /*
  *
  *
  */
+int BGS2_E::AT_SM20(int mode)
+{
+    QString s="AT^SM20=";
+    if(threadExitRequest)
+        return -1;
+    s.append(QString::number(mode).append('\r'));
+    QByteArray arr=s.toUtf8();
+    serial->write(arr);
+    if(WaitForString("OK",NULL,GSM_TOUT)<0)
+        return -1;
+    thread()->msleep(GSM_CMD_PAUSE);
+    return 1;
+}
+/*
+ *
+ */
+int BGS2_E::ATD(const char *s)
+{
+    QString str="ATD";
+    if(threadExitRequest)
+        return -1;
+    str.append(s).append(";\r");
+    QByteArray arr=str.toUtf8();
+    serial->write(arr);
+    if(WaitForString("OK",NULL,GSM_TOUT)<0)
+        return -1;
+    thread()->msleep(GSM_CMD_PAUSE);
+    return 1;
+}
+/*
+ *
+ */
+int BGS2_E::ATH(void)
+{
+    if(threadExitRequest)
+        return -1;
+    serial->write("ATH\r");
+    if(WaitForString("OK",NULL,GSM_TOUT)<0)
+        return -1;
+    thread()->msleep(GSM_CMD_PAUSE);
+    return 1;
+}
 //
 //
 //

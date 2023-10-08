@@ -31,6 +31,10 @@ public:
     QTimer *gsmtimer;
     QEventLoop *loop;
     bool threadExitRequest;
+    bool callRequest;
+    int callState;
+    bool hangUp;
+
 private:
     MainWindow *mainW;
     int timerdelay;
@@ -47,11 +51,17 @@ private:
     void SendGsmParam(GSM_PARAM *);
     void SendGsmErrors(ERRORS *);
     int PortInit(QSerialPort *);
+
+    int ProcessURC(void);
     int WaitForString(const char *s, QString *, int timeout);
     int AT(void);
     int ATE(void);
     int AT_CREG(void);
     int AT_CSQ(void);
+    int AT_SM20(int mode);
+    int ATD(const char *);
+    int ATH(void);
+    int AT_CLCC(int *);
 
 signals:
     void finishedPort();

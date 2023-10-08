@@ -152,6 +152,26 @@ void MainWindow::customEvent(QEvent *event)
           }
         }
         break;
+        case RedrawMainWindow::CALL112_BUTTON_PRESS:
+        {
+          int callrequest=*(uint32_t*)((RedrawMainWindow*)event)->GetingData();
+          if(callrequest)
+          {
+              QString s="Вызов службы спасения 112!";
+              Call112Notify=new InfoMsg(this,s,InfoMsg::NOTIFY_MSG);
+              gsmmodule->callRequest=true;
+              gsmmodule->hangUp=false;
+          }
+          else
+          {
+              if(Call112Notify)
+                delete Call112Notify;
+              Call112Notify=NULL;
+              gsmmodule->callRequest=false;
+              gsmmodule->hangUp=true;;
+          }
+        }
+        break;
         case RedrawMainWindow::FILECONFIG_ERR_MESSAGE:
         {
             ERRORS  err;
@@ -238,6 +258,7 @@ void MainWindow::customEvent(QEvent *event)
             }
         }
         break;
+
         default:
         break;
       }
@@ -263,11 +284,14 @@ MainWindow::MainWindow(QWidget *parent)
     gsmmodule->moveToThread(gsmThread);
     gsmThread->start();
 
-    NoConnectWarning=NULL;
     FileConfigError=NULL;
-    NoActiveRoutsNotify=NULL;
-    COMPortConnWarning=NULL;
     COMPortOpenError=NULL;
+
+    NoConnectWarning=NULL;
+    COMPortConnWarning=NULL;
+
+    NoActiveRoutsNotify=NULL;
+    Call112Notify=NULL;
 
     routStringEmptyFlag[0]=true;
     routStringEmptyFlag[1]=true;
@@ -303,10 +327,18 @@ MainWindow::~MainWindow()
 {
     if(FileConfigError)
         delete FileConfigError;
-    if(NoActiveRoutsNotify)
-        delete NoActiveRoutsNotify;
     if(COMPortOpenError)
         delete COMPortOpenError;
+
+    if(NoConnectWarning)
+        delete NoConnectWarning;
+    if(COMPortConnWarning)
+        delete COMPortConnWarning;
+
+    if(NoActiveRoutsNotify)
+        delete NoActiveRoutsNotify;
+     if(Call112Notify)
+         delete  Call112Notify;
 
     if(gsmmodule)
     {
@@ -337,6 +369,21 @@ void MainWindow::keyPressEvent(QKeyEvent *event)
     if(event->key()==Qt::Key_Escape)
     {
         this->close();
+    }
+    else if(event->key()==Qt::Key_D)
+    {
+        QString s="Вызов службы спасения 112!";
+        Call112Notify=new InfoMsg(this,s,InfoMsg::NOTIFY_MSG);
+        gsmmodule->callRequest=true;
+        gsmmodule->hangUp=false;
+    }
+    else if(event->key()==Qt::Key_H)
+    {
+        if(Call112Notify)
+          delete Call112Notify;
+        Call112Notify=NULL;
+        gsmmodule->callRequest=false;
+        gsmmodule->hangUp=true;;
     }
 }
 /*
