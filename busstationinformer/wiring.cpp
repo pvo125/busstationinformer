@@ -21,7 +21,7 @@ void * buttonsThreadFunc(void *arg)
    return 0;
 }
 
-void ButtonSoundplayISR(void)
+void ButtonSoundplay_ISR(void)
 {
     soundButtonReq=true;
 }
@@ -172,7 +172,7 @@ void WiringPins::runButtons(void)
       if(call112ButtonReq==true)
       {
           delay(100);
-          if(digitalRead(PI_112CALL_PIN)==LOW)
+          if(digitalRead(PI_CALL112_PIN)==LOW)
           {
             RedrawMainWindow *ev=new RedrawMainWindow((QEvent::Type)(QEvent::User));
             ev->SendingMsg(RedrawMainWindow::CALL112_BUTTON_PRESS);

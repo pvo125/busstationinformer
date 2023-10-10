@@ -110,7 +110,11 @@ BGS2_E::~BGS2_E()
  */
 int BGS2_E::PortInit(QSerialPort *ser)
 {
+#ifdef Q_OS_WIN
     ser->setPortName("COM3");  // устанавливаеми имя порта с виджета выбора доступных COM в системе
+#else
+    ser->setPortName("/dev/ttyUSB0");  // устанавливаеми имя порта с виджета выбора доступных COM в системе
+#endif
     ser->setBaudRate(QSerialPort::Baud9600);  /*speed=9600;*/
     ser->setDataBits(QSerialPort::Data8);
     ser->setParity(QSerialPort::EvenParity);

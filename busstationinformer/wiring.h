@@ -12,7 +12,7 @@
 #include <pthread.h>
 
 #define PI_SOUND_PIN    0
-#define PI_112CALL_PIN  1
+#define PI_CALL112_PIN  1
 #define PI_LEDBLINK_PIN 2
 
 class WiringPins : public QWidget
