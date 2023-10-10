@@ -10,8 +10,6 @@
 #include "wiring.h"
 #include "modem.h"
 
-extern void * GSMThreadFunc(void *arg);
-
 int InfoMsg::count=0;
 
 InfoMsg::InfoMsg(MainWindow *parent, QString &str,enum TYPE_NOTIFY type)
@@ -154,8 +152,8 @@ void MainWindow::customEvent(QEvent *event)
         break;
         case RedrawMainWindow::CALL112_BUTTON_PRESS:
         {
-          int callrequest=*(uint32_t*)((RedrawMainWindow*)event)->GetingData();
-          if(callrequest)
+          int callstate=*(uint32_t*)((RedrawMainWindow*)event)->GetingData();
+          if(callstate)
           {
               QString s="Вызов службы спасения 112!";
               Call112Notify=new InfoMsg(this,s,InfoMsg::NOTIFY_MSG);

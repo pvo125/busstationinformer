@@ -32,9 +32,10 @@ void ButtonCall112_ISR(void)
 }
 
 WiringPins::WiringPins(MainWindow *w):
-    path{"/sys/bus/w1/devices/"},initCompletedFlag{false}
+    initCompletedFlag{false},path{"/sys/bus/w1/devices/"}
 {
     setParent(w,Qt::Window);
+    callstate=0;
     //mount the device:
 #ifndef Q_OS_WIN
     system("sudo modprobe w1-gpio");
@@ -65,16 +66,16 @@ WiringPins::WiringPins(MainWindow *w):
 
       wiringPiSetup();
        /* Настройка вывода GPIO_0 на детекцию кнопки озвучки маршрутов по заднему фронту  */
-      pinMode(0,INPUT);
-      pullUpDnControl(0,PUD_UP);
-      wiringPiISR(0,INT_EDGE_FALLING,ButtonSoundplay_ISR);
+      pinMode(PI_SOUND_PIN,INPUT);
+      pullUpDnControl(PI_SOUND_PIN,PUD_UP);
+      wiringPiISR(PI_SOUND_PIN,INT_EDGE_FALLING,ButtonSoundplay_ISR);
 
       /* Настройка вывода GPIO_1 на детекцию кнопки "вызова 112" по заднему фронту */
-      pinMode(1,INPUT);
-      pullUpDnControl(1,PUD_UP);
-      wiringPiISR(1,INT_EDGE_FALLING,ButtonCall112_ISR);
+      pinMode(PI_CALL112_PIN,INPUT);
+      pullUpDnControl(PI_CALL112_PIN,PUD_UP);
+      wiringPiISR(PI_CALL112_PIN,INT_EDGE_FALLING,ButtonCall112_ISR);
 
-      pinMode(2,OUTPUT);
+      pinMode(PI_LEDBLINK_PIN,OUTPUT);
 #endif
 
 //      struct sched_param param;
@@ -159,7 +160,7 @@ void WiringPins::runButtons(void)
       if(soundButtonReq==true)
       {
           delay(100);
-          if(digitalRead(0)==LOW)
+          if(digitalRead(PI_SOUND_PIN)==LOW)
           {
             RedrawMainWindow *ev=new RedrawMainWindow((QEvent::Type)(QEvent::User));
             ev->SendingMsg(RedrawMainWindow::SOUND_BUTTON_PRESS);
@@ -171,17 +172,18 @@ void WiringPins::runButtons(void)
       if(call112ButtonReq==true)
       {
           delay(100);
-          if(digitalRead(1)==LOW)
+          if(digitalRead(PI_112CALL_PIN)==LOW)
           {
             RedrawMainWindow *ev=new RedrawMainWindow((QEvent::Type)(QEvent::User));
             ev->SendingMsg(RedrawMainWindow::CALL112_BUTTON_PRESS);
-            ev->SendingData(NULL);
+            callstate ^=1;
+            ev->SendingData(&callstate);
             QApplication::postEvent(parent(),ev);
           }
           call112ButtonReq=false;
       }
 
-      digitalWrite(2,state);
+      digitalWrite(PI_LEDBLINK_PIN,state);
       state ^=1;
       delay(200);
 #else
