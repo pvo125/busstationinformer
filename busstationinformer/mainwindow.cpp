@@ -152,21 +152,26 @@ void MainWindow::customEvent(QEvent *event)
         break;
         case RedrawMainWindow::CALL112_BUTTON_PRESS:
         {
-          int callstate=*(uint32_t*)((RedrawMainWindow*)event)->GetingData();
-          if(callstate)
+          bool callstate=*(bool*)((RedrawMainWindow*)event)->GetingData();
+          if(callstate==true)
           {
-              QString s="Вызов службы спасения 112!";
-              Call112Notify=new InfoMsg(this,s,InfoMsg::NOTIFY_MSG);
-              gsmmodule->callRequest=true;
-              gsmmodule->hangUp=false;
+              if(Call112Notify==NULL)
+              {
+                QString s="Вызов службы спасения 112!";
+                Call112Notify=new InfoMsg(this,s,InfoMsg::NOTIFY_MSG);
+                gsmmodule->callRequest=true;
+                gsmmodule->hangUp=false;
+              }
           }
           else
           {
               if(Call112Notify)
+              {
                 delete Call112Notify;
-              Call112Notify=NULL;
-              gsmmodule->callRequest=false;
-              gsmmodule->hangUp=true;;
+                Call112Notify=NULL;
+                gsmmodule->callRequest=false;
+                gsmmodule->hangUp=true;
+              }
           }
         }
         break;
