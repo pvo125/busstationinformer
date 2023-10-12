@@ -37,14 +37,16 @@ void BGS2_E::gsmProcess(void)
       if(callRequest)
       {
           callRequest=false;
-          ATD("+79527486813");
           callState=1;
+          ATD("+79527486813");
+
       }
       else if(hangUp)
       {
          hangUp=false;
-         ATH();
          callState=0;
+         ATH();
+
       }
       gsmParam.rssi=AT_CSQ();
       ProcessURC();
@@ -111,7 +113,7 @@ BGS2_E::~BGS2_E()
 int BGS2_E::PortInit(QSerialPort *ser)
 {
 #ifdef Q_OS_WIN
-    ser->setPortName("COM3");  // устанавливаеми имя порта с виджета выбора доступных COM в системе
+    ser->setPortName("COM4");  // устанавливаеми имя порта с виджета выбора доступных COM в системе
 #else
     ser->setPortName("/dev/ttyUSB0");  // устанавливаеми имя порта с виджета выбора доступных COM в системе
 #endif
@@ -237,21 +239,33 @@ int BGS2_E::ProcessURC(void)
       {
          ATH();
       }
-      else if(str.contains("NO DIALTONE"))
+      else if(str.contains("NO CARRIER"))
       {
-
+        //hangUp=true;
+        if(callState)
+        {
+            RedrawMainWindow *ev=new RedrawMainWindow((QEvent::Type)(QEvent::User));
+            ev->SendingMsg(RedrawMainWindow::CALL112_BUTTON_PRESS);
+            callState=0;
+            ev->SendingData(&callState);
+            QApplication::postEvent(mainW,ev);
+        }
       }
       else if(str.contains("BUSY"))
       {
-        hangUp=true;
-      }
-      else if(str.contains("NO CARRIER"))
-      {
-        hangUp=true;
-      }
-      else
-      {
+          //hangUp=true;
+          if(callState)
+          {
+              RedrawMainWindow *ev=new RedrawMainWindow((QEvent::Type)(QEvent::User));
+              ev->SendingMsg(RedrawMainWindow::CALL112_BUTTON_PRESS);
+              callState=0;
+              ev->SendingData(&callState);
+              QApplication::postEvent(mainW,ev);
+          }
 
+      }
+      else if(str.contains("NO DIALTONE"))
+      {
 
       }
    }
