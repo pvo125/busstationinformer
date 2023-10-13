@@ -151,6 +151,9 @@ void BGS2_E::gsmTimerExpired(void)
         SendGsmErrors(&errors);
     }
 }
+/*
+ *
+ */
 void BGS2_E::errorHandle(QSerialPort::SerialPortError error)
 {
     if(error==QSerialPort::ResourceError)
@@ -167,7 +170,6 @@ void BGS2_E::errorHandle(QSerialPort::SerialPortError error)
         threadExitRequest=1;
     }
 }
-
 /*
  *
  */

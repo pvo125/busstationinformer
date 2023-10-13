@@ -155,7 +155,7 @@ void MainWindow::customEvent(QEvent *event)
           bool callstate=*(bool*)((RedrawMainWindow*)event)->GetingData();
           if(callstate==true)
           {
-              if(Call112Notify==NULL)
+              if((Call112Notify==NULL) && gsmmodule)
               {
                 QString s="Вызов службы спасения 112!";
                 Call112Notify=new InfoMsg(this,s,InfoMsg::NOTIFY_MSG);
@@ -165,7 +165,7 @@ void MainWindow::customEvent(QEvent *event)
           }
           else
           {
-              if(Call112Notify)
+              if(Call112Notify && gsmmodule)
               {
                 delete Call112Notify;
                 Call112Notify=NULL;
