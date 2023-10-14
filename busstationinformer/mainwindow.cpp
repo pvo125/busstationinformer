@@ -373,6 +373,7 @@ void MainWindow::keyPressEvent(QKeyEvent *event)
     {
         this->close();
     }
+#ifdef Q_OS_WIN
     else if(event->key()==Qt::Key_D)
     {
         if(gsmmodule)
@@ -394,6 +395,7 @@ void MainWindow::keyPressEvent(QKeyEvent *event)
             gsmmodule->hangUp=true;;
         }
     }
+#endif
 }
 /*
  *

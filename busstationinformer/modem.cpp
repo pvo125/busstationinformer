@@ -29,7 +29,7 @@ void BGS2_E::gsmProcess(void)
     AT_SM20(0);
     while(!threadExitRequest)
     {
-      thread()->msleep(5000);
+      thread()->msleep(1000);
       gsmParam.netReg=AT_CREG();
       if(gsmParam.netReg==0)
           continue;
