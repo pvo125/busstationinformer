@@ -52,6 +52,9 @@ void BGS2_E::gsmProcess(void)
       ProcessURC();
       if(!threadExitRequest)
         SendGsmParam(&gsmParam);
+      gsm_str.clear();
+      urc.clear();
+      flagMsgComplete=true;
 
     }
     if(callState)
@@ -145,7 +148,7 @@ int BGS2_E::PortInit(QSerialPort *ser)
 void BGS2_E::gsmTimerExpired(void)
 {
     timerdelay=0;
-    if(!errors.comportConnErr)
+    if(!errors.comportConnErr && !errors.comportOpenErr)
     {
         errors.comportConnErr=1;
         SendGsmErrors(&errors);

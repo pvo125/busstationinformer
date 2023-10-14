@@ -375,18 +375,24 @@ void MainWindow::keyPressEvent(QKeyEvent *event)
     }
     else if(event->key()==Qt::Key_D)
     {
-        QString s="Вызов службы спасения 112!";
-        Call112Notify=new InfoMsg(this,s,InfoMsg::NOTIFY_MSG);
-        gsmmodule->callRequest=true;
-        gsmmodule->hangUp=false;
+        if(gsmmodule)
+        {
+            QString s="Вызов службы спасения 112!";
+            Call112Notify=new InfoMsg(this,s,InfoMsg::NOTIFY_MSG);
+            gsmmodule->callRequest=true;
+            gsmmodule->hangUp=false;
+        }
     }
     else if(event->key()==Qt::Key_H)
     {
-        if(Call112Notify)
-          delete Call112Notify;
-        Call112Notify=NULL;
-        gsmmodule->callRequest=false;
-        gsmmodule->hangUp=true;;
+        if(gsmmodule)
+        {
+            if(Call112Notify)
+                delete Call112Notify;
+            Call112Notify=NULL;
+            gsmmodule->callRequest=false;
+            gsmmodule->hangUp=true;;
+        }
     }
 }
 /*
