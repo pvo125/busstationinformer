@@ -38,8 +38,25 @@ void BGS2_E::gsmProcess(void)
       {
           callRequest=false;
           callState=1;
-          ATD("+79527486813");
-
+    #ifdef Q_OS_WIN
+         QFile file("appconfig.txt");
+    #else
+        QFile file("/home/pi/app/appconfig.txt");
+    #endif
+       if(file.open(QIODevice::ReadOnly)==true)
+       {
+          int startIdx,endIdx;
+          QByteArray array=file.readAll();
+          file.close();
+          startIdx=array.indexOf("phone=");
+          if(startIdx >=0)
+          {
+            startIdx+=6;
+            endIdx=array.indexOf(';',startIdx);
+            QString phone=array.mid(startIdx,endIdx-startIdx);
+            ATD(phone);
+          }
+       }
       }
       else if(hangUp)
       {
@@ -428,7 +445,7 @@ int BGS2_E::AT_SM20(int mode)
 /*
  *
  */
-int BGS2_E::ATD(const char *s)
+int BGS2_E::ATD(QString &s)
 {
     QString str="ATD";
     if(threadExitRequest)

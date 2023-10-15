@@ -21,6 +21,8 @@ httpProcess::httpProcess(MainWindow *w):
     buffIndex{-1}
   ,httpReqState{HTTP_REQ_IDLE}
 {
+    int startIndex,endIdx;
+
     setParent(w,Qt::Window);
     errors.allbits=0;
 #ifdef Q_OS_WIN
@@ -39,7 +41,7 @@ httpProcess::httpProcess(MainWindow *w):
    }
    QByteArray array=file.readAll();
    file.close();
-   int startIndex=array.indexOf("id=");
+   startIndex=array.indexOf("id=");
    if(startIndex==-1)
    {
        RedrawMainWindow *ev=new RedrawMainWindow(QEvent::User);
@@ -49,9 +51,9 @@ httpProcess::httpProcess(MainWindow *w):
        QApplication::postEvent(parent(),ev);
        return;
    }
-
    startIndex+=3;
-   QString id=array.mid(startIndex,3);
+   endIdx=array.indexOf(';',startIndex);
+   QString id=array.mid(startIndex,endIdx-startIndex);
    startIndex=array.indexOf("url=");
    if(startIndex==-1)
    {
@@ -63,8 +65,9 @@ httpProcess::httpProcess(MainWindow *w):
        return;
    }
    startIndex+=4;
-   QString server=array.mid(startIndex);
-   //server.chop(2);  // delete \r\n
+   endIdx=array.indexOf(';',startIndex);
+   QString server=array.mid(startIndex,endIdx-startIndex);
+
    server.append("/tablo/?id=");
    server.append(id);
    server.append("&ver=1.0.2&csq=87&tpcb=42&tcpu=47&ext=27&up=3218&br=6 HTTP/1.0");

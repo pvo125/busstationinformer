@@ -59,7 +59,7 @@ private:
     int AT_CREG(void);
     int AT_CSQ(void);
     int AT_SM20(int mode);
-    int ATD(const char *);
+    int ATD(QString &);
     int ATH(void);
     int AT_CLCC(int *);
 
