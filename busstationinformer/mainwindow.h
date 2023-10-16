@@ -37,6 +37,7 @@ class httpProcess;
 class WiringPins;
 class MainWindow;
 class BGS2_E;
+class videoplayer;
 
 
 class InfoMsg : QWidget
@@ -116,7 +117,9 @@ public:
     httpProcess *http;
     QTimer secTimer;
     QTimer routViewTimer;
-    QMediaPlayer *player;
+    QMediaPlayer *soundPlayer;
+    videoplayer *vplayer;
+    QTimer *videotimer;
     QVector<ROUT_ITEM> *routlistFront;
     QVector<ROUT_ITEM> *routlistBack;
     QVector<ROUT_ITEM>  *currRoutList;
@@ -142,14 +145,19 @@ public:
 private:
     Ui::MainWindow *ui;
     int CalcGsmSignalPower(int rssi);
+    int StartVideoPlayer(void);
+    int StopVideoPlayer(void);
 
 protected:
     virtual void keyPressEvent(QKeyEvent *ev);
     void customEvent(QEvent *event);
 
 private slots:
+    void videoTimerExpired(void);
     void secTimerExpired(void);
     void routViewTimerExpired(void);
-    void playerStateChanged(QMediaPlayer::State);
+    void soundPlayerStateChanged(QMediaPlayer::State);
+    //void videoPlayerStateChanged(QMediaPlayer::State);
+    //void displayErrorMessage(void);
 };
 #endif // MAINWINDOW_H

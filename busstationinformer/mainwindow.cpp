@@ -9,6 +9,7 @@
 #include "http.h"
 #include "wiring.h"
 #include "modem.h"
+#include "videoplayer.h"
 
 int InfoMsg::count=0;
 
@@ -141,11 +142,11 @@ void MainWindow::customEvent(QEvent *event)
 
                 buffer = new QBuffer(arr);
                 buffer->open(QIODevice::ReadWrite);
-                player->setMedia(QMediaContent(), buffer);
+                soundPlayer->setMedia(QMediaContent(), buffer);
 
                 //player->setMedia(QUrl::fromLocalFile(numbertrack));
-                player->setVolume(50);
-                player->play();
+                soundPlayer->setVolume(50);
+                soundPlayer->play();
             }
           }
         }
@@ -275,6 +276,9 @@ MainWindow::MainWindow(QWidget *parent)
 {
     ui->setupUi(this);
 
+    //videowidget=NULL;
+    //videoPlayer=NULL;
+
     gsmThread=new QThread();
     gsmmodule=new BGS2_E(this);
     connect(gsmThread, &QThread::started, gsmmodule, &BGS2_E::gsmProcess);
@@ -321,8 +325,15 @@ MainWindow::MainWindow(QWidget *parent)
     connect(&routViewTimer,SIGNAL(timeout()),SLOT(routViewTimerExpired()));
     routViewTimer.start();
 
-    player = new QMediaPlayer;
-    connect(player, SIGNAL(stateChanged(QMediaPlayer::State)), this, SLOT(playerStateChanged(QMediaPlayer::State)));
+    soundPlayer = new QMediaPlayer;
+    connect(soundPlayer, SIGNAL(stateChanged(QMediaPlayer::State)), this, SLOT(soundPlayerStateChanged(QMediaPlayer::State)));
+
+    vplayer=NULL;
+    vplayer=new videoplayer(this);
+    videotimer=new QTimer();
+    videotimer->setInterval(60000);
+    connect(videotimer,SIGNAL(timeout()),SLOT(videoTimerExpired()));
+
 }
 /*
  */
@@ -349,8 +360,10 @@ MainWindow::~MainWindow()
     }
 
     delete w_pins;
-    player->stop();
-    delete player;
+    soundPlayer->stop();
+    delete soundPlayer;
+
+    StopVideoPlayer();
 
     if(buffer)  delete buffer;
     if(arr)     delete arr;
@@ -395,12 +408,18 @@ void MainWindow::keyPressEvent(QKeyEvent *event)
             gsmmodule->hangUp=true;;
         }
     }
+    else if(event->key()==Qt::Key_V)
+    {
+        StartVideoPlayer();
+        videotimer->start();
+    }
+
 #endif
 }
 /*
  *
  */
-void MainWindow::playerStateChanged(QMediaPlayer::State state)
+void MainWindow::soundPlayerStateChanged(QMediaPlayer::State state)
 {
     if(state==QMediaPlayer::StoppedState)
     {
@@ -427,9 +446,9 @@ loop:
 
                 buffer = new QBuffer(arr);
                 buffer->open(QIODevice::ReadWrite);
-                player->setMedia(QMediaContent(), buffer);
+                soundPlayer->setMedia(QMediaContent(), buffer);
                // player->setMedia(QUrl::fromLocalFile(numbertrack));
-                player->play();
+                soundPlayer->play();
             }
             else
             {
@@ -465,9 +484,9 @@ loop:
 
             buffer = new QBuffer(arr);
             buffer->open(QIODevice::ReadWrite);
-            player->setMedia(QMediaContent(), buffer);
+            soundPlayer->setMedia(QMediaContent(), buffer);
             //player->setMedia(QUrl::fromLocalFile(numbertrack));
-            player->play();
+            soundPlayer->play();
             soundTrackCount++;
         }
     }
@@ -628,6 +647,30 @@ void MainWindow::routViewTimerExpired(void)
 /*
  *
  */
+int MainWindow::StartVideoPlayer(void)
+{
+    if(vplayer)
+    vplayer->PlayVideo();
+    return 0;
+}
+/*
+ *
+ */
+int MainWindow::StopVideoPlayer(void)
+{
+    if(vplayer)
+    {
+       vplayer->StopVideo();
+    }
+    return 0;
+}
+/*
+ *
+ */
+void MainWindow::videoTimerExpired(void)
+{
+    StartVideoPlayer();
+}
 //
 //
 //
