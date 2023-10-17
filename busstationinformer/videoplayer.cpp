@@ -22,6 +22,7 @@ videoplayer::videoplayer(MainWindow *w)
     //player.setMedia(QUrl::fromLocalFile("VIDEO/1.mp4"));
     videowidget.setParent(w);
     player.setVideoOutput(&videowidget);
+    videowidget.setFullScreen(1);
     videowidget.hide();
    // player.play();
 }

@@ -118,6 +118,8 @@ void MainWindow::customEvent(QEvent *event)
         break;
         case RedrawMainWindow::SOUND_BUTTON_PRESS:
         {
+          StopVideoPlayer();
+          videotimer->start(60000);
           if(soundTrackCount==-1)
           {
             timetrackFlag=SND_TRACK;
@@ -153,6 +155,8 @@ void MainWindow::customEvent(QEvent *event)
         break;
         case RedrawMainWindow::CALL112_BUTTON_PRESS:
         {
+          StopVideoPlayer();
+          videotimer->start(60000);
           bool callstate=*(bool*)((RedrawMainWindow*)event)->GetingData();
           if(callstate==true)
           {
@@ -650,7 +654,7 @@ void MainWindow::routViewTimerExpired(void)
 int MainWindow::StartVideoPlayer(void)
 {
     if(vplayer)
-    vplayer->PlayVideo();
+        vplayer->PlayVideo();
     return 0;
 }
 /*
@@ -669,7 +673,10 @@ int MainWindow::StopVideoPlayer(void)
  */
 void MainWindow::videoTimerExpired(void)
 {
-    StartVideoPlayer();
+    if(soundTrackCount < 0 && !Call112Notify)
+    {
+        StartVideoPlayer();
+    }
 }
 //
 //

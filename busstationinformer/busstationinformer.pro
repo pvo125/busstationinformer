@@ -23,7 +23,7 @@ HEADERS += \
     videoplayer.h \
     wiring.h
 
-LIBS += -L"D:\K-Lite Codec Pack\Filters\LAV"
+LIBS += -L"D:\K-Lite Codec Pack\Filters\LAV64"
 unix:   LIBS += -lwiringPi
 
 
