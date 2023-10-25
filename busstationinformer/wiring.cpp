@@ -128,9 +128,11 @@ void WiringPins::runW1(void)
    while(1)
    {
 #ifndef Q_OS_WIN
-      file.open(QIODevice::ReadOnly);
-      QByteArray arr=file.readAll();
-      file.close();
+      w1_mutex.lock();
+          file.open(QIODevice::ReadOnly);
+          QByteArray arr=file.readAll();
+          file.close();
+      w1_mutex.unlock();
        // Returns the first index of 't'.
       temp = strchr(arr.data(),'t');
        // Read the string following "t=".
@@ -138,6 +140,11 @@ void WiringPins::runW1(void)
        // atof: changes string to float.
       value = atof(temp)/1000;
       SendTempr(&value);
+      flag=1;
+      delay(800);
+      flag=2;
+      delay(200);
+      flag=3;
 #else
       sleep(1);
 #endif
@@ -159,7 +166,7 @@ void WiringPins::runButtons(void)
 #ifndef Q_OS_WIN
       if(soundButtonReq==true)
       {
-          delay(100);
+          delay(50);
           if(digitalRead(PI_SOUND_PIN)==LOW)
           {
             RedrawMainWindow *ev=new RedrawMainWindow((QEvent::Type)(QEvent::User));
@@ -171,7 +178,7 @@ void WiringPins::runButtons(void)
       }
       if(call112ButtonReq==true)
       {
-          delay(100);
+          delay(50);
           if(digitalRead(PI_CALL112_PIN)==LOW)
           {
             RedrawMainWindow *ev=new RedrawMainWindow((QEvent::Type)(QEvent::User));

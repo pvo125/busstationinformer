@@ -3,6 +3,7 @@
 
 #include <QDate>
 #include <QTime>
+#include <QProcess>
 #include <QThread>
 //#include<QNetworkAccessManager>
 //#include <QtNetwork>
@@ -119,7 +120,7 @@ void MainWindow::customEvent(QEvent *event)
         case RedrawMainWindow::SOUND_BUTTON_PRESS:
         {
           StopVideoPlayer();
-          videotimer->start(60000);
+          videotimer->start(30000);
           if(soundTrackCount==-1)
           {
             timetrackFlag=SND_TRACK;
@@ -145,7 +146,6 @@ void MainWindow::customEvent(QEvent *event)
                 buffer = new QBuffer(arr);
                 buffer->open(QIODevice::ReadWrite);
                 soundPlayer->setMedia(QMediaContent(), buffer);
-
                 //player->setMedia(QUrl::fromLocalFile(numbertrack));
                 soundPlayer->setVolume(50);
                 soundPlayer->play();
@@ -156,7 +156,7 @@ void MainWindow::customEvent(QEvent *event)
         case RedrawMainWindow::CALL112_BUTTON_PRESS:
         {
           StopVideoPlayer();
-          videotimer->start(60000);
+          videotimer->start(30000);
           bool callstate=*(bool*)((RedrawMainWindow*)event)->GetingData();
           if(callstate==true)
           {
@@ -266,7 +266,11 @@ void MainWindow::customEvent(QEvent *event)
             }
         }
         break;
-
+        case RedrawMainWindow::W1_MUTEX_UNLOCK:
+        {
+          w_pins->w1_mutex.unlock();
+        }
+        break;
         default:
         break;
       }
@@ -280,9 +284,7 @@ MainWindow::MainWindow(QWidget *parent)
 {
     ui->setupUi(this);
 
-    //videowidget=NULL;
-    //videoPlayer=NULL;
-
+    extPlayerActive=false;
     gsmThread=new QThread();
     gsmmodule=new BGS2_E(this);
     connect(gsmThread, &QThread::started, gsmmodule, &BGS2_E::gsmProcess);
@@ -332,11 +334,22 @@ MainWindow::MainWindow(QWidget *parent)
     soundPlayer = new QMediaPlayer;
     connect(soundPlayer, SIGNAL(stateChanged(QMediaPlayer::State)), this, SLOT(soundPlayerStateChanged(QMediaPlayer::State)));
 
-    vplayer=NULL;
-    vplayer=new videoplayer(this);
+
+#ifndef Q_OS_WIN
+    QDir dir("/home/pi/app/VIDEO");
+#else
+    QDir dir("VIDEO");
+#endif
+    dir.setFilter(QDir::Files | QDir::Hidden | QDir::NoSymLinks);
+    list=new QFileInfoList();
+    list->clear();
+    list->append(dir.entryInfoList());
+    maxListIdx=list->size();
+    listIdx=0;
     videotimer=new QTimer();
-    videotimer->setInterval(60000);
+    videotimer->setInterval(30000);
     connect(videotimer,SIGNAL(timeout()),SLOT(videoTimerExpired()));
+    videotimer->start();
 
 }
 /*
@@ -367,7 +380,8 @@ MainWindow::~MainWindow()
     soundPlayer->stop();
     delete soundPlayer;
 
-    StopVideoPlayer();
+    if(extPlayerActive)
+        StopVideoPlayer();
 
     if(buffer)  delete buffer;
     if(arr)     delete arr;
@@ -412,13 +426,14 @@ void MainWindow::keyPressEvent(QKeyEvent *event)
             gsmmodule->hangUp=true;;
         }
     }
+#endif
     else if(event->key()==Qt::Key_V)
     {
-        StartVideoPlayer();
-        videotimer->start();
+        //StartVideoPlayer();
+        //videotimer->start();
     }
 
-#endif
+
 }
 /*
  *
@@ -653,18 +668,35 @@ void MainWindow::routViewTimerExpired(void)
  */
 int MainWindow::StartVideoPlayer(void)
 {
-    if(vplayer)
-        vplayer->PlayVideo();
+    extPlayer=new QProcess(this);
+    connect(extPlayer , SIGNAL(finished(int,QProcess::ExitStatus)), this, SLOT(extProcessFinished(int, QProcess::ExitStatus)));
+    QString path("VIDEO/"+list->at(listIdx).fileName());
+    QStringList arg(path);
+    extPlayer->start("vplayer.exe",arg);
+    extPlayerActive=true;
     return 0;
 }
+void MainWindow::extProcessFinished(int, QProcess::ExitStatus)
+{
+   if(extPlayerActive)
+   {
+       extPlayerActive=false;
+       extPlayer->kill();
+       extPlayer->deleteLater();
+   }
+   if(++listIdx >=maxListIdx)   listIdx=0;
+}
+
 /*
  *
  */
 int MainWindow::StopVideoPlayer(void)
 {
-    if(vplayer)
+    if(extPlayerActive)
     {
-       vplayer->StopVideo();
+        extPlayerActive=false;
+        extPlayer->kill();
+        extPlayer->deleteLater();
     }
     return 0;
 }
@@ -675,7 +707,20 @@ void MainWindow::videoTimerExpired(void)
 {
     if(soundTrackCount < 0 && !Call112Notify)
     {
-        StartVideoPlayer();
+#ifndef Q_OS_WIN
+        if(w_pins->flag==1/* || w_pins->flag==2*/)
+        {
+           w_pins->w1_mutex.lock();
+           StartVideoPlayer();
+           videotimer->start(30000);
+        }
+        else
+        {
+            videotimer->start(200);
+        }
+#else
+         StartVideoPlayer();
+#endif
     }
 }
 //

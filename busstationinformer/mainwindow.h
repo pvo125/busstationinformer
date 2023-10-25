@@ -11,6 +11,8 @@
 #include <QFrame>
 #include <QLabel>
 #include <QThread>
+#include <QProcess>
+#include <QFileInfoList>
 
 typedef struct
 {
@@ -81,7 +83,8 @@ public:
       COMPORT_ERR_MESSAGE,
       GSM_PARAM,
       GSM_TIMER_START,
-      GSM_TIMER_STOP
+      GSM_TIMER_STOP,
+      W1_MUTEX_UNLOCK
    };
    RedrawMainWindow(Type type) : QEvent(type) { }
    ~RedrawMainWindow() {}
@@ -110,6 +113,12 @@ public:
     ~MainWindow();
 
     void ClearStringsRouts(int startStrIdx);
+
+    int listIdx;
+    int maxListIdx;
+    QFileInfoList *list;
+    bool extPlayerActive;
+    QProcess *extPlayer;
 
     int soundTrackCount;
     enum SND_TIMETRACK timetrackFlag;
@@ -157,6 +166,8 @@ private slots:
     void secTimerExpired(void);
     void routViewTimerExpired(void);
     void soundPlayerStateChanged(QMediaPlayer::State);
+
+    void extProcessFinished(int, QProcess::ExitStatus);
     //void videoPlayerStateChanged(QMediaPlayer::State);
     //void displayErrorMessage(void);
 };
