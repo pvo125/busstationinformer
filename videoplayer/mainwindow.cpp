@@ -2,7 +2,7 @@
 #include "ui_mainwindow.h"
 #include <QApplication>
 
-MainWindow::MainWindow(char *mediaPath, QWidget *parent) :
+MainWindow::MainWindow(char *mediafile, QWidget *parent) :
     QMainWindow(parent),
     ui(new Ui::MainWindow)
 {
@@ -17,7 +17,7 @@ MainWindow::MainWindow(char *mediaPath, QWidget *parent) :
 
    QString path=QApplication::applicationDirPath();
    path.append("/");
-   path.append(mediaPath);
+   path.append(mediafile);
    player->setMedia(QUrl::fromLocalFile(path));
    connect(player, SIGNAL(stateChanged(QMediaPlayer::State)), this, SLOT(PlayerStateChanged(QMediaPlayer::State)));
    player->play();

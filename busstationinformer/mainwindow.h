@@ -4,9 +4,7 @@
 #include <QMainWindow>
 #include <QKeyEvent>
 #include <QTimer>
-#include <QtMultimedia/QMediaPlayer>
 #include <QVector>
-#include <QBuffer>
 
 #include <QFrame>
 #include <QLabel>
@@ -114,28 +112,26 @@ public:
 
     void ClearStringsRouts(int startStrIdx);
 
-    int listIdx;
-    int maxListIdx;
+    int videolistIdx;
+    int maxvideoListIdx;
     QFileInfoList *list;
-    bool extPlayerActive;
-    QProcess *extPlayer;
+    bool extVideoPlayerActive;
+    bool extSoundPlayerActive;
+    QProcess *extVideoPlayer;
+    QProcess *extSoundPlayer;
+    QTimer *videotimer;
 
-    int soundTrackCount;
-    enum SND_TIMETRACK timetrackFlag;
     int buffIdx;
     httpProcess *http;
     QTimer secTimer;
     QTimer routViewTimer;
-    QMediaPlayer *soundPlayer;
-    videoplayer *vplayer;
-    QTimer *videotimer;
     QVector<ROUT_ITEM> *routlistFront;
     QVector<ROUT_ITEM> *routlistBack;
     QVector<ROUT_ITEM>  *currRoutList;
     WiringPins *w_pins;
     float onewiretempr;
-    QBuffer *buffer;
-    QByteArray *arr;
+    //QBuffer *buffer;
+    //QByteArray *arr;
 
     BGS2_E *gsmmodule;
     QThread *gsmThread;
@@ -156,6 +152,8 @@ private:
     int CalcGsmSignalPower(int rssi);
     int StartVideoPlayer(void);
     int StopVideoPlayer(void);
+    int StartSoundPlayer(void);
+    int StopSoundPlayer(void);
 
 protected:
     virtual void keyPressEvent(QKeyEvent *ev);
@@ -165,10 +163,9 @@ private slots:
     void videoTimerExpired(void);
     void secTimerExpired(void);
     void routViewTimerExpired(void);
-    void soundPlayerStateChanged(QMediaPlayer::State);
 
-    void extProcessFinished(int, QProcess::ExitStatus);
-    //void videoPlayerStateChanged(QMediaPlayer::State);
-    //void displayErrorMessage(void);
+    void extVideoProcessFinished(int, QProcess::ExitStatus);
+    void extSoundProcessFinished(int, QProcess::ExitStatus);
+    void extSoundPlayerFillBuffer(QString &str);
 };
 #endif // MAINWINDOW_H

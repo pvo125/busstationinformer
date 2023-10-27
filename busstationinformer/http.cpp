@@ -219,7 +219,7 @@ void httpProcess::startRequest(void)
 //
 void httpProcess::httpTimerExpired(void)
 {
-    if(((MainWindow*)parent())->soundTrackCount==-1)
+    if(!((MainWindow*)parent())->extSoundPlayerActive)
     {
         startRequest();
         httpRequestTimer.start(45000);

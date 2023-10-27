@@ -7,10 +7,10 @@
 #include <QThread>
 //#include<QNetworkAccessManager>
 //#include <QtNetwork>
+#include <QDir>
 #include "http.h"
 #include "wiring.h"
 #include "modem.h"
-#include "videoplayer.h"
 
 int InfoMsg::count=0;
 
@@ -80,6 +80,59 @@ int MainWindow::CalcGsmSignalPower(int rssi)
       return 1;
 }
 //
+void MainWindow::extSoundPlayerFillBuffer(QString &str)
+{
+   int size=currRoutList->size();
+   for(int i=0;i<size;i++)
+   {
+      str.append(currRoutList->at(i).routNumber+'-');
+      if(i==(size-1))
+        str.append(currRoutList->at(i).timeLeft+';');
+      else
+        str.append(currRoutList->at(i).timeLeft+',');
+   }
+}
+//
+void MainWindow::extSoundProcessFinished(int, QProcess::ExitStatus)
+{
+   extSoundPlayer->kill();
+   extSoundPlayer->deleteLater();
+   extSoundPlayerActive=false;
+}
+//
+int MainWindow::StartSoundPlayer(void)
+{
+    QString str;
+    extSoundPlayerActive=true;
+    extSoundPlayerFillBuffer(str);
+    extSoundPlayer=new QProcess(this);
+    connect(extSoundPlayer , SIGNAL(finished(int,QProcess::ExitStatus)), this, SLOT(extSoundProcessFinished(int, QProcess::ExitStatus)));
+    QStringList arg(str);
+#ifdef Q_OS_WIN
+    QString s=(QApplication::applicationDirPath()+"/soundplayer.exe");
+#else
+    QString s=(QApplication::applicationDirPath()+"/soundplayer");
+#endif
+    extSoundPlayer->start(s,arg);
+    return 0;
+}
+/*
+ *
+ */
+int MainWindow::StopSoundPlayer(void)
+{
+    if(extSoundPlayerActive && extSoundPlayer)
+    {
+        extSoundPlayer->kill();
+        delete extSoundPlayer; //extVideoPlayer->deleteLater();
+        extSoundPlayerActive=false;
+    }
+    return 0;
+}
+/*
+ *
+ */
+//
 void MainWindow::customEvent(QEvent *event)
 {
     if(event->type()==QEvent::User)
@@ -121,35 +174,10 @@ void MainWindow::customEvent(QEvent *event)
         {
           StopVideoPlayer();
           videotimer->start(30000);
-          if(soundTrackCount==-1)
+          if(!extSoundPlayerActive)
           {
-            timetrackFlag=SND_TRACK;
-            soundTrackCount=0;
-            if(currRoutList->isEmpty()==false)
-            {
-#ifndef Q_OS_WIN
-                QString numbertrack("/home/pi/app/TRACK/");
-#else
-                QString numbertrack("TRACK/");
-#endif
-                numbertrack.append(currRoutList->at(soundTrackCount).routNumber);
-                numbertrack.append(".wav");
-
-                if(buffer)  delete buffer;
-                if(arr)     delete arr;
-                QFile file(numbertrack);
-                file.open(QIODevice::ReadOnly);
-                arr = new QByteArray();
-                arr->append(file.readAll());
-                file.close();
-
-                buffer = new QBuffer(arr);
-                buffer->open(QIODevice::ReadWrite);
-                soundPlayer->setMedia(QMediaContent(), buffer);
-                //player->setMedia(QUrl::fromLocalFile(numbertrack));
-                soundPlayer->setVolume(50);
-                soundPlayer->play();
-            }
+            if(currRoutList && (currRoutList->isEmpty()==false))
+                StartSoundPlayer();
           }
         }
         break;
@@ -284,7 +312,11 @@ MainWindow::MainWindow(QWidget *parent)
 {
     ui->setupUi(this);
 
-    extPlayerActive=false;
+    extVideoPlayerActive=false;
+    extSoundPlayerActive=false;
+    extVideoPlayer=NULL;
+    extSoundPlayer=NULL;
+
     gsmThread=new QThread();
     gsmmodule=new BGS2_E(this);
     connect(gsmThread, &QThread::started, gsmmodule, &BGS2_E::gsmProcess);
@@ -310,13 +342,8 @@ MainWindow::MainWindow(QWidget *parent)
     routStringEmptyFlag[1]=true;
     routStringEmptyFlag[2]=true;
     routStringEmptyFlag[3]=true;
-
-    buffer=NULL;
-    arr=NULL;
     w_pins=new WiringPins(this);
 
-    soundTrackCount=-1;
-    timetrackFlag=SND_TRACK;
     buffIdx=-1;
     currRoutList=NULL;
     http=new httpProcess(this);
@@ -331,21 +358,17 @@ MainWindow::MainWindow(QWidget *parent)
     connect(&routViewTimer,SIGNAL(timeout()),SLOT(routViewTimerExpired()));
     routViewTimer.start();
 
-    soundPlayer = new QMediaPlayer;
-    connect(soundPlayer, SIGNAL(stateChanged(QMediaPlayer::State)), this, SLOT(soundPlayerStateChanged(QMediaPlayer::State)));
-
-
 #ifndef Q_OS_WIN
     QDir dir("/home/pi/app/VIDEO");
 #else
-    QDir dir("VIDEO");
+    QDir dir(QApplication::applicationDirPath()+"/VIDEO");
 #endif
     dir.setFilter(QDir::Files | QDir::Hidden | QDir::NoSymLinks);
     list=new QFileInfoList();
     list->clear();
     list->append(dir.entryInfoList());
-    maxListIdx=list->size();
-    listIdx=0;
+    maxvideoListIdx=list->size();
+    videolistIdx=0;
     videotimer=new QTimer();
     videotimer->setInterval(30000);
     connect(videotimer,SIGNAL(timeout()),SLOT(videoTimerExpired()));
@@ -377,14 +400,11 @@ MainWindow::~MainWindow()
     }
 
     delete w_pins;
-    soundPlayer->stop();
-    delete soundPlayer;
 
-    if(extPlayerActive)
+    if(extSoundPlayerActive)
+         StopSoundPlayer();
+    if(extVideoPlayerActive)
         StopVideoPlayer();
-
-    if(buffer)  delete buffer;
-    if(arr)     delete arr;
 
     routlistFront->clear();
     delete routlistFront;
@@ -404,7 +424,7 @@ void MainWindow::keyPressEvent(QKeyEvent *event)
     {
         this->close();
     }
-#ifdef Q_OS_WIN
+#if 0   //      #ifdef Q_OS_WIN
     else if(event->key()==Qt::Key_D)
     {
         if(gsmmodule)
@@ -429,15 +449,19 @@ void MainWindow::keyPressEvent(QKeyEvent *event)
 #endif
     else if(event->key()==Qt::Key_V)
     {
-        //StartVideoPlayer();
-        //videotimer->start();
+        StopVideoPlayer();
+        videotimer->start(30000);
+        if(!extSoundPlayerActive)
+        {
+          if(currRoutList && (currRoutList->isEmpty()==false))
+            StartSoundPlayer();
+        }
     }
-
-
 }
 /*
  *
  */
+#if 0
 void MainWindow::soundPlayerStateChanged(QMediaPlayer::State state)
 {
     if(state==QMediaPlayer::StoppedState)
@@ -511,6 +535,7 @@ loop:
     }
 
 }
+#endif
 /*
  *
  */
@@ -668,35 +693,43 @@ void MainWindow::routViewTimerExpired(void)
  */
 int MainWindow::StartVideoPlayer(void)
 {
-    extPlayer=new QProcess(this);
-    connect(extPlayer , SIGNAL(finished(int,QProcess::ExitStatus)), this, SLOT(extProcessFinished(int, QProcess::ExitStatus)));
-    QString path("VIDEO/"+list->at(listIdx).fileName());
+    extVideoPlayerActive=true;
+    extVideoPlayer=new QProcess(this);
+    connect(extVideoPlayer , SIGNAL(finished(int,QProcess::ExitStatus)), this, SLOT(extVideoProcessFinished(int, QProcess::ExitStatus)));
+    QString path("VIDEO/"+list->at(videolistIdx).fileName());
     QStringList arg(path);
-    extPlayer->start("vplayer.exe",arg);
-    extPlayerActive=true;
+#ifdef Q_OS_WIN
+    extVideoPlayer->start(QApplication::applicationDirPath()+"/videoplayer.exe",arg);
+#else
+    extVideoPlayer->start(QApplication::applicationDirPath()+"/videoplayer",arg);
+#endif
     return 0;
 }
-void MainWindow::extProcessFinished(int, QProcess::ExitStatus)
+/*
+ *
+ */
+void MainWindow::extVideoProcessFinished(int, QProcess::ExitStatus)
 {
-   if(extPlayerActive)
+   if(extVideoPlayerActive)
    {
-       extPlayerActive=false;
-       extPlayer->kill();
-       extPlayer->deleteLater();
+       extVideoPlayer->kill();
+       extVideoPlayer->deleteLater();
+        extVideoPlayerActive=false;
+       //w_pins->w1_mutex.unlock();
    }
-   if(++listIdx >=maxListIdx)   listIdx=0;
+   if(++videolistIdx >=maxvideoListIdx)   videolistIdx=0;
 }
-
 /*
  *
  */
 int MainWindow::StopVideoPlayer(void)
 {
-    if(extPlayerActive)
+    if(extVideoPlayerActive && extVideoPlayer)
     {
-        extPlayerActive=false;
-        extPlayer->kill();
-        extPlayer->deleteLater();
+        extVideoPlayer->kill();
+        delete extVideoPlayer; //extVideoPlayer->deleteLater();
+        //w_pins->w1_mutex.unlock();
+        extVideoPlayerActive=false;
     }
     return 0;
 }
@@ -705,7 +738,7 @@ int MainWindow::StopVideoPlayer(void)
  */
 void MainWindow::videoTimerExpired(void)
 {
-    if(soundTrackCount < 0 && !Call112Notify)
+    if(!extSoundPlayerActive && !Call112Notify)
     {
 #ifndef Q_OS_WIN
         if(w_pins->flag==1/* || w_pins->flag==2*/)

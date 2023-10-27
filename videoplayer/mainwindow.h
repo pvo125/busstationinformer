@@ -15,7 +15,7 @@ class MainWindow : public QMainWindow
     Q_OBJECT
 
 public:
-    MainWindow(char *workdir,QWidget *parent = 0);
+    MainWindow(char *mediafile, QWidget *parent = 0);
     ~MainWindow();
 
 private:
