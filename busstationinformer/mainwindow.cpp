@@ -97,8 +97,11 @@ void MainWindow::extSoundProcessFinished(int, QProcess::ExitStatus)
 {
    extSoundPlayer->kill();
    extSoundPlayer->deleteLater();
+#ifndef Q_OS_WIN
+       w_pins->w1_mutex.unlock();
+#endif
    extSoundPlayerActive=false;
-   w_pins->w1_mutex.unlock();
+
 }
 //
 void MainWindow::soundTimerExpired(void)
@@ -157,7 +160,9 @@ int MainWindow::StopSoundPlayer(void)
         extSoundPlayer->kill();
         delete extSoundPlayer; //extVideoPlayer->deleteLater();
         extSoundPlayerActive=false;
-        w_pins->w1_mutex.unlock();
+#ifndef Q_OS_WIN
+       w_pins->w1_mutex.unlock();
+#endif
     }
     return 0;
 }
@@ -750,7 +755,9 @@ void MainWindow::extVideoProcessFinished(int, QProcess::ExitStatus)
        extVideoPlayer->kill();
        extVideoPlayer->deleteLater();
        extVideoPlayerActive=false;
+#ifndef Q_OS_WIN
        w_pins->w1_mutex.unlock();
+#endif
    }
    if(++videolistIdx >=maxvideoListIdx)   videolistIdx=0;
 }
@@ -763,7 +770,9 @@ int MainWindow::StopVideoPlayer(void)
     {
         extVideoPlayer->kill();
         delete extVideoPlayer; //extVideoPlayer->deleteLater();
+#ifndef Q_OS_WIN
         w_pins->w1_mutex.unlock();
+#endif
         extVideoPlayerActive=false;
     }
     return 0;

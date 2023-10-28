@@ -1,16 +1,12 @@
 #ifndef MAINWINDOW_H
 #define MAINWINDOW_H
 
-#include <QMainWindow>
+#include <QWidget>
 #include <QString>
 #include <QMediaPlayer>
 #include <QVideoWidget>
 
-namespace Ui {
-class MainWindow;
-}
-
-class MainWindow : public QMainWindow
+class MainWindow : public QWidget
 {
     Q_OBJECT
 
@@ -22,7 +18,6 @@ private:
     QMediaPlayer *player;
     QVideoWidget *vwidget;
 
-    Ui::MainWindow *ui;
 private slots:
      void PlayerStateChanged(QMediaPlayer::State);
 };

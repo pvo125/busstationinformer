@@ -1,20 +1,14 @@
 #include "mainwindow.h"
-#include "ui_mainwindow.h"
 #include <QApplication>
 
 MainWindow::MainWindow(char *mediafile, QWidget *parent) :
-    QMainWindow(parent),
-    ui(new Ui::MainWindow)
+    QWidget(parent)
 {
-   ui->setupUi(this);
    player = new QMediaPlayer(this);
    vwidget = new QVideoWidget(this);
-   //vwidget->setGeometry(0,0,1280,720);
+   vwidget->setGeometry(0,0,1920,1080);
    player->setVideoOutput(vwidget);
    setWindowFlags(Qt::FramelessWindowHint);
-   setCentralWidget(vwidget);
-
-
    QString path=QApplication::applicationDirPath();
    path.append("/");
    path.append(mediafile);
@@ -29,7 +23,6 @@ MainWindow::~MainWindow()
 {
     delete vwidget;
     delete player;
-    delete ui;
 }
 /*
  *
@@ -38,7 +31,7 @@ void MainWindow::PlayerStateChanged(QMediaPlayer::State state)
 {
     if(state==QMediaPlayer::StoppedState)
     {
-      this->close();
+      delete this;//this->close();
     }
 }
 /*
