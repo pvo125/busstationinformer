@@ -120,6 +120,7 @@ public:
     QProcess *extVideoPlayer;
     QProcess *extSoundPlayer;
     QTimer *videotimer;
+    QTimer *soundtimer;
 
     int buffIdx;
     httpProcess *http;
@@ -161,6 +162,7 @@ protected:
 
 private slots:
     void videoTimerExpired(void);
+    void soundTimerExpired(void);
     void secTimerExpired(void);
     void routViewTimerExpired(void);
 

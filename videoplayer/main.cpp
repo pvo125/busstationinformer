@@ -11,8 +11,8 @@ int main(int argc, char *argv[])
     {
         QApplication a(argc, argv);
         MainWindow w(argv[1]);
-        w.setGeometry(0,0,1280,720);
-        w.show();
+        w.setGeometry(0,0,1920,1080);
+        w.showFullScreen();
         return a.exec();
     }
     else

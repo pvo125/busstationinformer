@@ -6,7 +6,11 @@ MainWindow::MainWindow(const char *param_routs, QWidget *parent) :
     QMainWindow(parent),
     ui(new Ui::MainWindow)
 {
+#ifdef Q_OS_WIN
     QTextCodec *codec = QTextCodec::codecForName("Windows-1251");
+#else
+     QTextCodec *codec = QTextCodec::codecForName("UTF-8");
+#endif
     ui->setupUi(this);
 
     currRoutList=new QVector<ROUT_ITEM>();

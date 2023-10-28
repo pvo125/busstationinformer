@@ -98,22 +98,53 @@ void MainWindow::extSoundProcessFinished(int, QProcess::ExitStatus)
    extSoundPlayer->kill();
    extSoundPlayer->deleteLater();
    extSoundPlayerActive=false;
+   w_pins->w1_mutex.unlock();
+}
+//
+void MainWindow::soundTimerExpired(void)
+{
+    if(w_pins->flag==1)
+    {
+        QString str;
+        soundtimer->stop();
+        w_pins->w1_mutex.lock();
+        extSoundPlayerActive=true;
+        extSoundPlayerFillBuffer(str);
+        extSoundPlayer=new QProcess(this);
+        connect(extSoundPlayer , SIGNAL(finished(int,QProcess::ExitStatus)), this, SLOT(extSoundProcessFinished(int, QProcess::ExitStatus)));
+        QStringList arg(str);
+#ifdef Q_OS_WIN
+         QString s=(QApplication::applicationDirPath()+"/soundplayer.exe");
+#else
+         QString s=(QApplication::applicationDirPath()+"/soundplayer");
+#endif
+        extSoundPlayer->start(s,arg);
+    }
+    else
+      soundtimer->start(200);
+
 }
 //
 int MainWindow::StartSoundPlayer(void)
 {
-    QString str;
-    extSoundPlayerActive=true;
-    extSoundPlayerFillBuffer(str);
-    extSoundPlayer=new QProcess(this);
-    connect(extSoundPlayer , SIGNAL(finished(int,QProcess::ExitStatus)), this, SLOT(extSoundProcessFinished(int, QProcess::ExitStatus)));
-    QStringList arg(str);
+    if(w_pins->flag==1)
+    {
+        QString str;
+        w_pins->w1_mutex.lock();
+        extSoundPlayerActive=true;
+        extSoundPlayerFillBuffer(str);
+        extSoundPlayer=new QProcess(this);
+        connect(extSoundPlayer , SIGNAL(finished(int,QProcess::ExitStatus)), this, SLOT(extSoundProcessFinished(int, QProcess::ExitStatus)));
+        QStringList arg(str);
 #ifdef Q_OS_WIN
-    QString s=(QApplication::applicationDirPath()+"/soundplayer.exe");
+         QString s=(QApplication::applicationDirPath()+"/soundplayer.exe");
 #else
-    QString s=(QApplication::applicationDirPath()+"/soundplayer");
+         QString s=(QApplication::applicationDirPath()+"/soundplayer");
 #endif
-    extSoundPlayer->start(s,arg);
+        extSoundPlayer->start(s,arg);
+    }
+    else
+      soundtimer->start(200);
     return 0;
 }
 /*
@@ -126,6 +157,7 @@ int MainWindow::StopSoundPlayer(void)
         extSoundPlayer->kill();
         delete extSoundPlayer; //extVideoPlayer->deleteLater();
         extSoundPlayerActive=false;
+        w_pins->w1_mutex.unlock();
     }
     return 0;
 }
@@ -358,11 +390,11 @@ MainWindow::MainWindow(QWidget *parent)
     connect(&routViewTimer,SIGNAL(timeout()),SLOT(routViewTimerExpired()));
     routViewTimer.start();
 
-#ifndef Q_OS_WIN
-    QDir dir("/home/pi/app/VIDEO");
-#else
+//#ifndef Q_OS_WIN
+//    QDir dir("/home/pi/app/VIDEO");
+//#else
     QDir dir(QApplication::applicationDirPath()+"/VIDEO");
-#endif
+//#endif
     dir.setFilter(QDir::Files | QDir::Hidden | QDir::NoSymLinks);
     list=new QFileInfoList();
     list->clear();
@@ -373,6 +405,9 @@ MainWindow::MainWindow(QWidget *parent)
     videotimer->setInterval(30000);
     connect(videotimer,SIGNAL(timeout()),SLOT(videoTimerExpired()));
     videotimer->start();
+
+    soundtimer=new QTimer();
+    connect(soundtimer,SIGNAL(timeout()),SLOT(soundTimerExpired()));
 
 }
 /*
@@ -714,8 +749,8 @@ void MainWindow::extVideoProcessFinished(int, QProcess::ExitStatus)
    {
        extVideoPlayer->kill();
        extVideoPlayer->deleteLater();
-        extVideoPlayerActive=false;
-       //w_pins->w1_mutex.unlock();
+       extVideoPlayerActive=false;
+       w_pins->w1_mutex.unlock();
    }
    if(++videolistIdx >=maxvideoListIdx)   videolistIdx=0;
 }
@@ -728,7 +763,7 @@ int MainWindow::StopVideoPlayer(void)
     {
         extVideoPlayer->kill();
         delete extVideoPlayer; //extVideoPlayer->deleteLater();
-        //w_pins->w1_mutex.unlock();
+        w_pins->w1_mutex.unlock();
         extVideoPlayerActive=false;
     }
     return 0;
