@@ -95,6 +95,8 @@ WiringPins::~WiringPins()
     int ret=pthread_cancel(w1Thread);
     if(ret==0)
       pthread_join(w1Thread,NULL);
+    w1_mutex.unlock();
+
     ret=pthread_cancel(buttonsThread);
     if(ret==0)
       pthread_join(buttonsThread,NULL);

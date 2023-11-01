@@ -11,6 +11,7 @@
 #include "http.h"
 #include "wiring.h"
 #include "modem.h"
+#include "unistd.h"
 
 int InfoMsg::count=0;
 
@@ -395,11 +396,7 @@ MainWindow::MainWindow(QWidget *parent)
     connect(&routViewTimer,SIGNAL(timeout()),SLOT(routViewTimerExpired()));
     routViewTimer.start();
 
-//#ifndef Q_OS_WIN
-//    QDir dir("/home/pi/app/VIDEO");
-//#else
     QDir dir(QApplication::applicationDirPath()+"/VIDEO");
-//#endif
     dir.setFilter(QDir::Files | QDir::Hidden | QDir::NoSymLinks);
     list=new QFileInfoList();
     list->clear();
@@ -464,7 +461,7 @@ void MainWindow::keyPressEvent(QKeyEvent *event)
     {
         this->close();
     }
-#if 0   //      #ifdef Q_OS_WIN
+#ifdef Q_OS_WIN
     else if(event->key()==Qt::Key_D)
     {
         if(gsmmodule)
@@ -486,7 +483,6 @@ void MainWindow::keyPressEvent(QKeyEvent *event)
             gsmmodule->hangUp=true;;
         }
     }
-#endif
     else if(event->key()==Qt::Key_V)
     {
         StopVideoPlayer();
@@ -497,6 +493,7 @@ void MainWindow::keyPressEvent(QKeyEvent *event)
             StartSoundPlayer();
         }
     }
+#endif
 }
 /*
  *
@@ -582,6 +579,12 @@ loop:
 void MainWindow::secTimerExpired(void)
 {
     QTime time=QTime::currentTime();
+    if((time.hour()==6) &&  (time.minute()==2) && (time.second()==15 || time.second()==16 || time.second()==17))
+    {
+        //system("sudo reboot");
+        //close();
+        //return;
+    }
     QDate date=QDate::currentDate();
     QString str=time.toString("hh:mm");;
     ui->labelTime->setText(str);
