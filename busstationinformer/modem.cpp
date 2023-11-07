@@ -85,7 +85,7 @@ void BGS2_E::gsmProcess(void)
 BGS2_E::BGS2_E(MainWindow *w)
 {
     mainW=w;
-
+    callState=0;
     callRequest=false;
     hangUp=false;
 
@@ -268,8 +268,7 @@ int BGS2_E::ProcessURC(void)
         {
             RedrawMainWindow *ev=new RedrawMainWindow((QEvent::Type)(QEvent::User));
             ev->SendingMsg(RedrawMainWindow::CALL112_BUTTON_PRESS);
-            callState=0;
-            ev->SendingData(&callState);
+            ev->SendingData(NULL);
             QApplication::postEvent(mainW,ev);
         }
       }
@@ -280,8 +279,7 @@ int BGS2_E::ProcessURC(void)
           {
               RedrawMainWindow *ev=new RedrawMainWindow((QEvent::Type)(QEvent::User));
               ev->SendingMsg(RedrawMainWindow::CALL112_BUTTON_PRESS);
-              callState=0;
-              ev->SendingData(&callState);
+              ev->SendingData(NULL);
               QApplication::postEvent(mainW,ev);
           }
 

@@ -40,7 +40,7 @@ class BGS2_E;
 class videoplayer;
 
 
-class InfoMsg : QWidget
+class InfoMsg : public QWidget
 {
 
     Q_OBJECT

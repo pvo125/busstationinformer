@@ -70,7 +70,9 @@ InfoMsg::~InfoMsg()
     if(InfoMsg::count>0)
       InfoMsg::count--;
 }
-//
+/*
+ *
+ */
 int MainWindow::CalcGsmSignalPower(int rssi)
 {
     if(rssi >=26)   return 5;
@@ -80,7 +82,9 @@ int MainWindow::CalcGsmSignalPower(int rssi)
     else
       return 1;
 }
-//
+/*
+ *
+ */
 void MainWindow::extSoundPlayerFillBuffer(QString &str)
 {
    int size=currRoutList->size();
@@ -93,10 +97,12 @@ void MainWindow::extSoundPlayerFillBuffer(QString &str)
         str.append(currRoutList->at(i).timeLeft+',');
    }
 }
-//
+/*
+ *
+ */
 void MainWindow::extSoundProcessFinished(int, QProcess::ExitStatus)
 {
-   extSoundPlayer->kill();
+   //extSoundPlayer->kill();
    extSoundPlayer->deleteLater();
 #ifndef Q_OS_WIN
        w_pins->w1_mutex.unlock();
@@ -104,7 +110,9 @@ void MainWindow::extSoundProcessFinished(int, QProcess::ExitStatus)
    extSoundPlayerActive=false;
 
 }
-//
+/*
+ *
+ */
 void MainWindow::soundTimerExpired(void)
 {
     if(w_pins->flag==1)
@@ -128,7 +136,9 @@ void MainWindow::soundTimerExpired(void)
       soundtimer->start(200);
 
 }
-//
+/*
+ *
+ */
 int MainWindow::StartSoundPlayer(void)
 {
     if(w_pins->flag==1)
@@ -160,10 +170,10 @@ int MainWindow::StopSoundPlayer(void)
     {
         extSoundPlayer->kill();
         delete extSoundPlayer; //extVideoPlayer->deleteLater();
-        extSoundPlayerActive=false;
 #ifndef Q_OS_WIN
        w_pins->w1_mutex.unlock();
 #endif
+       extSoundPlayerActive=false;
     }
     return 0;
 }
@@ -221,8 +231,23 @@ void MainWindow::customEvent(QEvent *event)
         break;
         case RedrawMainWindow::CALL112_BUTTON_PRESS:
         {
-          StopVideoPlayer();
-          videotimer->start(30000);
+          if(!gsmmodule->callState/* (Call112Notify==NULL)*/ && gsmmodule)
+          {
+             gsmmodule->callRequest=true;
+             gsmmodule->hangUp=false;
+             StopVideoPlayer();
+             videotimer->start(30000);
+             QString s="Вызов службы спасения 112!";
+             Call112Notify=new InfoMsg(this,s,InfoMsg::NOTIFY_MSG);
+          }
+          else  if(gsmmodule->callState/*Call112Notify*/ && gsmmodule)
+          {
+              gsmmodule->callRequest=false;
+              gsmmodule->hangUp=true;
+              Call112Notify->deleteLater();
+             //Call112Notify=NULL;
+          }
+          /*
           bool callstate=*(bool*)((RedrawMainWindow*)event)->GetingData();
           if(callstate==true)
           {
@@ -244,6 +269,7 @@ void MainWindow::customEvent(QEvent *event)
                 gsmmodule->hangUp=true;
               }
           }
+          */
         }
         break;
         case RedrawMainWindow::FILECONFIG_ERR_MESSAGE:
@@ -343,7 +369,9 @@ void MainWindow::customEvent(QEvent *event)
     }
     QWidget::customEvent(event);
 }
-//
+/*
+ *
+ */
 MainWindow::MainWindow(QWidget *parent)
     : QMainWindow(parent)
     , ui(new Ui::MainWindow)
@@ -413,6 +441,7 @@ MainWindow::MainWindow(QWidget *parent)
 
 }
 /*
+ *
  */
 MainWindow::~MainWindow()
 {
@@ -428,11 +457,14 @@ MainWindow::~MainWindow()
 
     if(NoActiveRoutsNotify)
         delete NoActiveRoutsNotify;
-     if(Call112Notify)
-         delete  Call112Notify;
 
     if(gsmmodule)
     {
+        if(gsmmodule->callState)
+        {
+            Call112Notify->close();
+            //delete  Call112Notify;
+        }
         emit gsmmodule->finishedPort(); //delete gsmmodule;
     }
 
@@ -578,6 +610,8 @@ loop:
  */
 void MainWindow::secTimerExpired(void)
 {
+    if(extVideoPlayerActive)
+        return;
     QTime time=QTime::currentTime();
     if((time.hour()==6) &&  (time.minute()==2) && (time.second()==15 || time.second()==16 || time.second()==17))
     {
@@ -675,6 +709,8 @@ void MainWindow::routViewTimerExpired(void)
 {
    static int routcount=0;
 
+   if(extVideoPlayerActive)
+       return;
    if(buffIdx==0 && routcount==0)       currRoutList=routlistFront;
    else if(buffIdx==1 && routcount==0)  currRoutList=routlistBack;
 
@@ -755,12 +791,12 @@ void MainWindow::extVideoProcessFinished(int, QProcess::ExitStatus)
 {
    if(extVideoPlayerActive)
    {
-       extVideoPlayer->kill();
+      // extVideoPlayer->kill();
        extVideoPlayer->deleteLater();
-       extVideoPlayerActive=false;
 #ifndef Q_OS_WIN
        w_pins->w1_mutex.unlock();
 #endif
+       extVideoPlayerActive=false;
    }
    if(++videolistIdx >=maxvideoListIdx)   videolistIdx=0;
 }
@@ -771,12 +807,13 @@ int MainWindow::StopVideoPlayer(void)
 {
     if(extVideoPlayerActive && extVideoPlayer)
     {
-        extVideoPlayer->kill();
-        delete extVideoPlayer; //extVideoPlayer->deleteLater();
+        //extVideoPlayer->kill();
+        extVideoPlayer->terminate();
+       /*delete extVideoPlayer;*/ extVideoPlayer->deleteLater();
 #ifndef Q_OS_WIN
         w_pins->w1_mutex.unlock();
 #endif
-        extVideoPlayerActive=false;
+         extVideoPlayerActive=false;
     }
     return 0;
 }
@@ -785,7 +822,7 @@ int MainWindow::StopVideoPlayer(void)
  */
 void MainWindow::videoTimerExpired(void)
 {
-    if(!extSoundPlayerActive && !Call112Notify)
+    if(!extSoundPlayerActive && gsmmodule && !gsmmodule->callState/*!Call112Notify*/)
     {
 #ifndef Q_OS_WIN
         if(w_pins->flag==1/* || w_pins->flag==2*/)

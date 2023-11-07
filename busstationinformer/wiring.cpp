@@ -185,8 +185,7 @@ void WiringPins::runButtons(void)
           {
             RedrawMainWindow *ev=new RedrawMainWindow((QEvent::Type)(QEvent::User));
             ev->SendingMsg(RedrawMainWindow::CALL112_BUTTON_PRESS);
-            callstate ^=1;
-            ev->SendingData(&callstate);
+            ev->SendingData(NULL);
             QApplication::postEvent(parent(),ev);
           }
           call112ButtonReq=false;
