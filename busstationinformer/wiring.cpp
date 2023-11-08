@@ -86,7 +86,8 @@ WiringPins::WiringPins(MainWindow *w):
 //      param.sched_priority = 80;
 //      pthread_attr_setschedparam(&attr, &param);
 //      pthread_attr_setinheritsched(&attr, PTHREAD_EXPLICIT_SCHED);
-      pthread_create(&w1Thread,NULL,w1ThreadFunc,this);
+
+      //pthread_create(&w1Thread,NULL,w1ThreadFunc,this);
       pthread_create(&buttonsThread,NULL,buttonsThreadFunc,this);
 }
 
@@ -129,12 +130,18 @@ void WiringPins::runW1(void)
 
    while(1)
    {
+       flag=3;
+       w1_mutex.lock();
 #ifndef Q_OS_WIN
-      w1_mutex.lock();
           file.open(QIODevice::ReadOnly);
           QByteArray arr=file.readAll();
           file.close();
+#else
+
+          sleep(1);
+#endif
       w1_mutex.unlock();
+#ifndef Q_OS_WIN
        // Returns the first index of 't'.
       temp = strchr(arr.data(),'t');
        // Read the string following "t=".
@@ -148,6 +155,9 @@ void WiringPins::runW1(void)
       delay(200);
       flag=3;
 #else
+      flag=1;
+      sleep(1);
+      flag=2;
       sleep(1);
 #endif
    }

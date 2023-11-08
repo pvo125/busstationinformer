@@ -104,22 +104,19 @@ void MainWindow::extSoundProcessFinished(int, QProcess::ExitStatus)
 {
    //extSoundPlayer->kill();
    extSoundPlayer->deleteLater();
-#ifndef Q_OS_WIN
-       w_pins->w1_mutex.unlock();
-#endif
+   //w_pins->w1_mutex.unlock();
    extSoundPlayerActive=false;
-
 }
 /*
  *
  */
 void MainWindow::soundTimerExpired(void)
 {
-    if(w_pins->flag==1)
-    {
+    //if(w_pins->flag==1)
+    //{
         QString str;
         soundtimer->stop();
-        w_pins->w1_mutex.lock();
+       // w_pins->w1_mutex.lock();
         extSoundPlayerActive=true;
         extSoundPlayerFillBuffer(str);
         extSoundPlayer=new QProcess(this);
@@ -131,9 +128,9 @@ void MainWindow::soundTimerExpired(void)
          QString s=(QApplication::applicationDirPath()+"/soundplayer");
 #endif
         extSoundPlayer->start(s,arg);
-    }
-    else
-      soundtimer->start(200);
+   // }
+   // else
+    //  soundtimer->start(200);
 
 }
 /*
@@ -141,10 +138,10 @@ void MainWindow::soundTimerExpired(void)
  */
 int MainWindow::StartSoundPlayer(void)
 {
-    if(w_pins->flag==1)
-    {
+    //if(w_pins->flag==1)
+    //{
         QString str;
-        w_pins->w1_mutex.lock();
+        //w_pins->w1_mutex.lock();
         extSoundPlayerActive=true;
         extSoundPlayerFillBuffer(str);
         extSoundPlayer=new QProcess(this);
@@ -156,9 +153,9 @@ int MainWindow::StartSoundPlayer(void)
          QString s=(QApplication::applicationDirPath()+"/soundplayer");
 #endif
         extSoundPlayer->start(s,arg);
-    }
-    else
-      soundtimer->start(200);
+    //}
+    //else
+     // soundtimer->start(200);
     return 0;
 }
 /*
@@ -170,9 +167,7 @@ int MainWindow::StopSoundPlayer(void)
     {
         extSoundPlayer->kill();
         delete extSoundPlayer; //extVideoPlayer->deleteLater();
-#ifndef Q_OS_WIN
-       w_pins->w1_mutex.unlock();
-#endif
+       //w_pins->w1_mutex.unlock();
        extSoundPlayerActive=false;
     }
     return 0;
@@ -408,7 +403,7 @@ MainWindow::MainWindow(QWidget *parent)
     routStringEmptyFlag[1]=true;
     routStringEmptyFlag[2]=true;
     routStringEmptyFlag[3]=true;
-    w_pins=new WiringPins(this);
+    //w_pins=new WiringPins(this);
 
     buffIdx=-1;
     currRoutList=NULL;
@@ -468,7 +463,7 @@ MainWindow::~MainWindow()
         emit gsmmodule->finishedPort(); //delete gsmmodule;
     }
 
-    delete w_pins;
+    //delete w_pins;
 
     if(extSoundPlayerActive)
          StopSoundPlayer();
@@ -496,33 +491,31 @@ void MainWindow::keyPressEvent(QKeyEvent *event)
 #ifdef Q_OS_WIN
     else if(event->key()==Qt::Key_D)
     {
-        if(gsmmodule)
+        if(!gsmmodule->callState/* (Call112Notify==NULL)*/ && gsmmodule)
         {
-            QString s="Вызов службы спасения 112!";
-            Call112Notify=new InfoMsg(this,s,InfoMsg::NOTIFY_MSG);
-            gsmmodule->callRequest=true;
-            gsmmodule->hangUp=false;
+           gsmmodule->callRequest=true;
+           gsmmodule->hangUp=false;
+           StopVideoPlayer();
+           videotimer->start(30000);
+           QString s="Вызов службы спасения 112!";
+           Call112Notify=new InfoMsg(this,s,InfoMsg::NOTIFY_MSG);
+        }
+        else  if(gsmmodule->callState/*Call112Notify*/ && gsmmodule)
+        {
+            gsmmodule->callRequest=false;
+            gsmmodule->hangUp=true;
+            Call112Notify->deleteLater();
+           //Call112Notify=NULL;
         }
     }
     else if(event->key()==Qt::Key_H)
-    {
-        if(gsmmodule)
-        {
-            if(Call112Notify)
-                delete Call112Notify;
-            Call112Notify=NULL;
-            gsmmodule->callRequest=false;
-            gsmmodule->hangUp=true;;
-        }
-    }
-    else if(event->key()==Qt::Key_V)
     {
         StopVideoPlayer();
         videotimer->start(30000);
         if(!extSoundPlayerActive)
         {
           if(currRoutList && (currRoutList->isEmpty()==false))
-            StartSoundPlayer();
+              StartSoundPlayer();
         }
     }
 #endif
@@ -625,20 +618,19 @@ void MainWindow::secTimerExpired(void)
     str=date.toString("dd.MM.yyyy");
     ui->labelDate->setText(str);
 
-    if(w_pins->initCompletedFlag)
-    {
+   // if(w_pins->initCompletedFlag)
+   // {
        if(onewiretempr > -50 && onewiretempr <100)
        {
-           QString strtemp=QString::number(onewiretempr,'f',0);
+           QString strtemp=QString::number(onewiretempr,'f',1);
            strtemp.append("°C");
            ui->labelTempr->setText(strtemp);
        }
         else
           ui->labelTempr->setText("----");
-    }
-    else
-        ui->labelTempr->setText("----");
-    // ui->labelTempr->setText(QString::number(buffIdx));
+   // }
+   // else
+     //   ui->labelTempr->setText("----");
 }
 /*
  *
@@ -793,9 +785,7 @@ void MainWindow::extVideoProcessFinished(int, QProcess::ExitStatus)
    {
       // extVideoPlayer->kill();
        extVideoPlayer->deleteLater();
-#ifndef Q_OS_WIN
-       w_pins->w1_mutex.unlock();
-#endif
+       //w_pins->w1_mutex.unlock();
        extVideoPlayerActive=false;
    }
    if(++videolistIdx >=maxvideoListIdx)   videolistIdx=0;
@@ -810,10 +800,8 @@ int MainWindow::StopVideoPlayer(void)
         //extVideoPlayer->kill();
         extVideoPlayer->terminate();
        /*delete extVideoPlayer;*/ extVideoPlayer->deleteLater();
-#ifndef Q_OS_WIN
-        w_pins->w1_mutex.unlock();
-#endif
-         extVideoPlayerActive=false;
+       // w_pins->w1_mutex.unlock();
+        extVideoPlayerActive=false;
     }
     return 0;
 }
@@ -824,20 +812,16 @@ void MainWindow::videoTimerExpired(void)
 {
     if(!extSoundPlayerActive && gsmmodule && !gsmmodule->callState/*!Call112Notify*/)
     {
-#ifndef Q_OS_WIN
-        if(w_pins->flag==1/* || w_pins->flag==2*/)
-        {
-           w_pins->w1_mutex.lock();
+       // if(w_pins->flag==1/* || w_pins->flag==2*/)
+       // {
+         //  w_pins->w1_mutex.lock();
            StartVideoPlayer();
            videotimer->start(30000);
-        }
-        else
-        {
-            videotimer->start(200);
-        }
-#else
-         StartVideoPlayer();
-#endif
+       // }
+       // else
+       // {
+       //     videotimer->start(200);
+       // }
     }
 }
 //

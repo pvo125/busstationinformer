@@ -17,9 +17,19 @@ void httpProcess::SendBuffIdx(int *pIdx)
 /*
  *
  */
+void httpProcess::SendWeatherTempr(float *pTempr)
+{
+    RedrawMainWindow *ev=new RedrawMainWindow((QEvent::Type)(QEvent::User));
+    ev->SendingMsg(RedrawMainWindow::UPDATE_TEMPR);
+    ev->SendingData(pTempr);
+    QApplication::postEvent(parent(),ev);
+}
+/*
+ *
+ */
 httpProcess::httpProcess(MainWindow *w):
     buffIndex{-1}
-  ,httpReqState{HTTP_REQ_IDLE}
+  ,httpReqState{HTTP_REQ_IDLE},weatherReqState{HTTP_REQ_IDLE}
 {
     int startIndex,endIdx;
 
@@ -79,6 +89,14 @@ httpProcess::httpProcess(MainWindow *w):
    httpRequestTimer.setInterval(45000);
    httpRequestTimer.start();
    startRequest();
+
+   url.clear();
+   url.setUrl("http://api.openweathermap.org/data/2.5/find?q=Krasnoyarsk,RU&type=like&units=metric&APPID=1d879dedc7592d989f5aefb7f38b8ca1");
+   weatherRequest=QNetworkRequest(url);
+   connect(&weatherRequestTimer,SIGNAL(timeout()),this,SLOT(weatherTimerExpired()));
+   weatherRequestTimer.setInterval(120000);
+   weatherRequestTimer.start();
+   startWeatherRequest();
 }
 /*
  *
@@ -88,7 +106,7 @@ httpProcess::~httpProcess()
 /*
  *
  */
-void httpProcess::parcingData(QByteArray &data, QVector<ROUT_ITEM> &routlist)
+void httpProcess::parsingRoutsData(QByteArray &data, QVector<ROUT_ITEM> &routlist)
 {
     QByteArray temp;
     QTextCodec *codec = QTextCodec::codecForName("Windows-1251");
@@ -146,9 +164,7 @@ void httpProcess::parcingData(QByteArray &data, QVector<ROUT_ITEM> &routlist)
     }
 
 }
-/*
- *
- */
+//
 void httpProcess::httpFinished(void)
 {
     if(!reply->error())
@@ -180,9 +196,7 @@ void httpProcess::httpFinished(void)
     }
     reply->deleteLater();
 }
-/*
- *
- */
+//
 void httpProcess::httpReadyRead(void)
 {
      if(!reply->error())
@@ -190,17 +204,15 @@ void httpProcess::httpReadyRead(void)
         QByteArray dataRaw;
         dataRaw=reply->readAll();
         if(buffIndex==0)   // 0
-            parcingData(dataRaw,*((MainWindow*)parent())->routlistBack);
+            parsingRoutsData(dataRaw,*((MainWindow*)parent())->routlistBack);
         else            //1, -1
-            parcingData(dataRaw,*((MainWindow*)parent())->routlistFront);
+            parsingRoutsData(dataRaw,*((MainWindow*)parent())->routlistFront);
      }
      else
        reply->abort();
 
 }
-/*
- *
- */
+//
 void httpProcess::startRequest(void)
 {
     if(httpReqState!=HTTP_REQ_BUSY)
@@ -225,3 +237,90 @@ void httpProcess::httpTimerExpired(void)
         httpRequestTimer.start(45000);
     }
 }
+/*
+ *
+ */
+float httpProcess::parsingWeatherData(QByteArray &data)
+{
+    float tempr;
+    int idxStart=data.indexOf("\"temp\":");
+    int idxEnd=data.indexOf(',',idxStart);
+    if(idxStart>=0 && idxEnd>=0)
+    {
+        idxStart+=7;
+        QByteArray temp=data.mid(idxStart,idxEnd-idxStart);
+        bool ok;
+        tempr=temp.toFloat(&ok);
+        if(ok==true)
+            return tempr;
+        else
+          return -1000;
+    }
+    else
+      return -1000;
+}
+//
+void httpProcess::weatherFinished(void)
+{
+    if(!weatherReply->error())
+    {
+        weatherReqState=HTTP_REQ_COMPLETED;
+        if(errors.connectionErr==1)
+        {
+           RedrawMainWindow *ev=new RedrawMainWindow(QEvent::User);
+           ev->SendingMsg(RedrawMainWindow::CONNECT_ERR_MESSAGE);
+           errors.connectionErr=0;
+           ev->SendingData(&errors.allbits);
+           QApplication::postEvent(parent(),ev);
+        }
+    }
+    else
+    {
+       if(errors.connectionErr==0)
+       {
+            RedrawMainWindow *ev=new RedrawMainWindow(QEvent::User);
+            ev->SendingMsg(RedrawMainWindow::CONNECT_ERR_MESSAGE);
+            errors.connectionErr=1;
+            ev->SendingData(&errors.allbits);
+            QApplication::postEvent(parent(),ev);
+       }
+       weatherReqState=HTTP_REQ_IDLE;
+    }
+    weatherReply->deleteLater();
+}
+//
+void httpProcess::weatherReadyRead(void)
+{
+     if(!weatherReply->error())
+     {
+        QByteArray dataRaw;
+        dataRaw=weatherReply->readAll();
+        float temp=parsingWeatherData(dataRaw);
+        if(temp!=-1000)
+        {
+            weatherTempr=temp;
+            SendWeatherTempr(&weatherTempr);
+        }
+     }
+     else
+       weatherReply->abort();
+}
+//
+void httpProcess::startWeatherRequest(void)
+{
+
+    weatherReply=netManager.get(weatherRequest);
+    connect(weatherReply,SIGNAL(finished()),this,SLOT(weatherFinished()));
+    connect(weatherReply,SIGNAL(readyRead()),this,SLOT(weatherReadyRead()));
+    weatherReqState=HTTP_REQ_BUSY;
+
+
+}
+//
+void httpProcess::weatherTimerExpired(void)
+{
+     startWeatherRequest();
+}
+//
+//
+//

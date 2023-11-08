@@ -29,23 +29,35 @@ public:
 private:
 
     int          buffIndex;
+    float weatherTempr;
     enum HTTP_REQUEST_STATE  httpReqState;
-
     QTimer                httpRequestTimer;
     QNetworkAccessManager netManager;
     QUrl                  url;
     QNetworkReply         *reply;
     QNetworkRequest       request;
+
+    enum HTTP_REQUEST_STATE  weatherReqState;
+    QTimer                weatherRequestTimer;
+    QNetworkReply         *weatherReply;
+    QNetworkRequest       weatherRequest;
     ERRORS errors;
 
     void startRequest(void);
-    void parcingData(QByteArray &data,QVector<ROUT_ITEM> &list);
+    void parsingRoutsData(QByteArray &data,QVector<ROUT_ITEM> &list);
+    float parsingWeatherData(QByteArray &data);
     void SendBuffIdx(int *pIdx);
+    void SendWeatherTempr(float *pTempr);
+    void startWeatherRequest(void);
 
 public slots:
     void httpFinished();
     void httpReadyRead();
     void httpTimerExpired();
+
+    void weatherFinished();
+    void weatherReadyRead();
+    void weatherTimerExpired();
 };
 
 
