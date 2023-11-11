@@ -27,19 +27,33 @@ void httpProcess::SendWeatherTempr(float *pTempr)
 /*
  *
  */
+int httpProcess::parsingConfigParam(const char *token,QByteArray &array,QString &param)
+{
+    int startIndex,endIdx;
+
+    int len=strlen(token);
+    startIndex=array.indexOf(token);
+    if(startIndex>=0)
+    {
+      startIndex+=len;
+      endIdx=array.indexOf(';',startIndex);
+      param=array.mid(startIndex,endIdx-startIndex);
+      return 0;
+    }
+    else
+        return -1;
+}
+/*
+ *
+ */
 httpProcess::httpProcess(MainWindow *w):
     buffIndex{-1}
   ,httpReqState{HTTP_REQ_IDLE},weatherReqState{HTTP_REQ_IDLE}
 {
-    int startIndex,endIdx;
-
     setParent(w,Qt::Window);
     errors.allbits=0;
-#ifdef Q_OS_WIN
-   QFile file("appconfig.txt");
-#else
-   QFile file("/home/pi/app/appconfig.txt");
-#endif
+
+   QFile file(QApplication::applicationDirPath()+"/appconfig.txt");
    if(file.open(QIODevice::ReadOnly)==false)
    {
        RedrawMainWindow *ev=new RedrawMainWindow(QEvent::User);
@@ -51,36 +65,29 @@ httpProcess::httpProcess(MainWindow *w):
    }
    QByteArray array=file.readAll();
    file.close();
-   startIndex=array.indexOf("id=");
-   if(startIndex==-1)
-   {
-       RedrawMainWindow *ev=new RedrawMainWindow(QEvent::User);
-       ev->SendingMsg(RedrawMainWindow::FILECONFIG_ERR_MESSAGE);
-       errors.fileconfigErr=1;
-       ev->SendingData((uint32_t*)&errors);
-       QApplication::postEvent(parent(),ev);
-       return;
-   }
-   startIndex+=3;
-   endIdx=array.indexOf(';',startIndex);
-   QString id=array.mid(startIndex,endIdx-startIndex);
-   startIndex=array.indexOf("url=");
-   if(startIndex==-1)
-   {
-       RedrawMainWindow *ev=new RedrawMainWindow(QEvent::User);
-       ev->SendingMsg(RedrawMainWindow::FILECONFIG_ERR_MESSAGE);
-       errors.fileconfigErr=1;
-       ev->SendingData((uint32_t*)&errors);
-       QApplication::postEvent(parent(),ev);
-       return;
-   }
-   startIndex+=4;
-   endIdx=array.indexOf(';',startIndex);
-   QString server=array.mid(startIndex,endIdx-startIndex);
 
-   server.append("/tablo/?id=");
-   server.append(id);
-   server.append("&ver=1.0.2&csq=87&tpcb=42&tcpu=47&ext=27&up=3218&br=6 HTTP/1.0");
+   QString id;
+   if(parsingConfigParam("id=",array,id)<0)
+   {
+       RedrawMainWindow *ev=new RedrawMainWindow(QEvent::User);
+       ev->SendingMsg(RedrawMainWindow::FILECONFIG_ERR_MESSAGE);
+       errors.fileconfigErr=1;
+       ev->SendingData((uint32_t*)&errors);
+       QApplication::postEvent(parent(),ev);
+       return;
+   }
+
+   QString server;
+   if(parsingConfigParam("url=",array,server)<0)
+   {
+       RedrawMainWindow *ev=new RedrawMainWindow(QEvent::User);
+       ev->SendingMsg(RedrawMainWindow::FILECONFIG_ERR_MESSAGE);
+       errors.fileconfigErr=1;
+       ev->SendingData((uint32_t*)&errors);
+       QApplication::postEvent(parent(),ev);
+       return;
+   }
+   server.append("/tablo/?id="+id+"&ver=1.0.2&csq=87&tpcb=42&tcpu=47&ext=27&up=3218&br=6 HTTP/1.0");
 
    url.setUrl(server);
   // url.setUrl("http://84.22.159.130:2929/tablo/?id=100&ver=1.0.2&csq=87&tpcb=42&tcpu=47&ext=27&up=3218&br=6 HTTP/1.0");
@@ -90,11 +97,35 @@ httpProcess::httpProcess(MainWindow *w):
    httpRequestTimer.start();
    startRequest();
 
+   /* weather */
+   QString latitude,longitude,apikey;
+   if(parsingConfigParam("lat=",array,latitude)==0)
+   {
+     if(parsingConfigParam("lon=",array,longitude)==0)
+     {
+        if(parsingConfigParam("apikey=",array,apikey)<0)
+            apikey.append("dd616505-6ec2-433b-a08e-a99a9bfcee40");
+     }
+     else
+     {
+         longitude.append("92.052572");
+         apikey.append("dd616505-6ec2-433b-a08e-a99a9bfcee40");
+     }
+   }
+   else
+   {
+       longitude.append("92.052572");
+       latitude.append("56.810563");
+       apikey.append("dd616505-6ec2-433b-a08e-a99a9bfcee40");
+   }
    url.clear();
-   url.setUrl("http://api.openweathermap.org/data/2.5/find?q=Krasnoyarsk,RU&type=like&units=metric&APPID=1d879dedc7592d989f5aefb7f38b8ca1");
+   url.setUrl("https://api.weather.yandex.ru/v2/fact?lat="+latitude+"&lon="+longitude);   //56.010563&lon=92.852572
+   //url.setUrl("http://api.openweathermap.org/data/2.5/find?q=Krasnoyarsk,RU&type=like&units=metric&APPID=10d39378d7d6d6ac8dabf60d74155c76"); //1d879dedc7592d989f5aefb7f38b8ca1
    weatherRequest=QNetworkRequest(url);
+   //weatherRequest.setHeader(QNetworkRequest::ContentTypeHeader,"text/html");
+   weatherRequest.setRawHeader(QByteArray("X-Yandex-API-Key"),QByteArray(apikey.toUtf8())) ;
    connect(&weatherRequestTimer,SIGNAL(timeout()),this,SLOT(weatherTimerExpired()));
-   weatherRequestTimer.setInterval(120000);
+   weatherRequestTimer.setInterval(1200000);
    weatherRequestTimer.start();
    startWeatherRequest();
 }
@@ -260,9 +291,21 @@ float httpProcess::parsingWeatherData(QByteArray &data)
       return -1000;
 }
 //
+void httpProcess::sslErrors1(const QList<QSslError> &errors)
+{
+    QString errorString;
+    for (const QSslError &error : errors) {
+        if (!errorString.isEmpty())
+            errorString += '\n';
+        errorString += error.errorString();
+    }
+}
+
+//
 void httpProcess::weatherFinished(void)
 {
-    if(!weatherReply->error())
+    int err=weatherReply->error();
+    if(!err)
     {
         weatherReqState=HTTP_REQ_COMPLETED;
         if(errors.connectionErr==1)
@@ -306,12 +349,16 @@ void httpProcess::weatherReadyRead(void)
        weatherReply->abort();
 }
 //
+//
 void httpProcess::startWeatherRequest(void)
 {
+
 
     weatherReply=netManager.get(weatherRequest);
     connect(weatherReply,SIGNAL(finished()),this,SLOT(weatherFinished()));
     connect(weatherReply,SIGNAL(readyRead()),this,SLOT(weatherReadyRead()));
+    //connect(&netManager,SIGNAL( sslErrors(QNetworkReply*,QList<QSslError>)) , SLOT( sslErrors(QNetworkReply*,QList<QSslError>)));
+    connect(weatherReply, &QNetworkReply::sslErrors, this, &httpProcess::sslErrors1);
     weatherReqState=HTTP_REQ_BUSY;
 
 

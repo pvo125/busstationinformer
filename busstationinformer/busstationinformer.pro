@@ -24,6 +24,7 @@ HEADERS += \
 unix:   LIBS += -lwiringPi
 
 
+#win32:  LIBS+=-LC:/OpenSSL-Win32/lib/MinGW -llibeay32 -lssleay32
 
 FORMS += \
     mainwindow.ui

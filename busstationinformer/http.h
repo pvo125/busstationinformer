@@ -43,6 +43,7 @@ private:
     QNetworkRequest       weatherRequest;
     ERRORS errors;
 
+    int parsingConfigParam(const char *token, QByteArray &array, QString &);
     void startRequest(void);
     void parsingRoutsData(QByteArray &data,QVector<ROUT_ITEM> &list);
     float parsingWeatherData(QByteArray &data);
@@ -55,6 +56,8 @@ public slots:
     void httpReadyRead();
     void httpTimerExpired();
 
+    //void sslErrors(QNetworkReply*,QList<QSslError>);
+    void sslErrors1(const QList<QSslError> &errors);
     void weatherFinished();
     void weatherReadyRead();
     void weatherTimerExpired();

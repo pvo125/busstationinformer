@@ -404,6 +404,7 @@ MainWindow::MainWindow(QWidget *parent)
     routStringEmptyFlag[2]=true;
     routStringEmptyFlag[3]=true;
     //w_pins=new WiringPins(this);
+    onewiretempr=-1000;
 
     buffIdx=-1;
     currRoutList=NULL;
@@ -622,7 +623,8 @@ void MainWindow::secTimerExpired(void)
    // {
        if(onewiretempr > -50 && onewiretempr <100)
        {
-           QString strtemp=QString::number(onewiretempr,'f',1);
+           //QString strtemp=QString::number(onewiretempr,'f',1);
+           QString strtemp=QString::number(onewiretempr);
            strtemp.append("°C");
            ui->labelTempr->setText(strtemp);
        }
