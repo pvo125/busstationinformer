@@ -38,8 +38,9 @@ WiringPins::WiringPins(MainWindow *w):
     callstate=0;
     //mount the device:
 #ifndef Q_OS_WIN
-    system("sudo modprobe w1-gpio");
-    system("sudo modprobe w1-therm");
+   // system("sudo modprobe w1-gpio");
+   // system("sudo modprobe w1-therm");
+#if 0
     // Check if /sys/bus/w1/devices/ exists.
     if((dirp = opendir(path)) == NULL)
      {
@@ -47,7 +48,8 @@ WiringPins::WiringPins(MainWindow *w):
           return;
      }
     // Reads the directories or files in the current directory.
-     while((direntp = readdir(dirp)) != NULL)
+
+    while((direntp = readdir(dirp)) != NULL)
      {
           // If 28-00000 is the substring of d_name,
           // then copy d_name to rom and print rom.
@@ -63,6 +65,7 @@ WiringPins::WiringPins(MainWindow *w):
       strcat(path,rom);
       strcat(path,"/w1_slave");
       initCompletedFlag=true;
+#endif
 
       wiringPiSetup();
        /* Настройка вывода GPIO_0 на детекцию кнопки озвучки маршрутов по заднему фронту  */
@@ -93,12 +96,12 @@ WiringPins::WiringPins(MainWindow *w):
 
 WiringPins::~WiringPins()
 {
-    int ret=pthread_cancel(w1Thread);
-    if(ret==0)
-      pthread_join(w1Thread,NULL);
-    w1_mutex.unlock();
+//    int ret=pthread_cancel(w1Thread);
+//    if(ret==0)
+//      pthread_join(w1Thread,NULL);
+//    w1_mutex.unlock();
 
-    ret=pthread_cancel(buttonsThread);
+    int ret=pthread_cancel(buttonsThread);
     if(ret==0)
       pthread_join(buttonsThread,NULL);
 }

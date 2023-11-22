@@ -12,6 +12,7 @@
 #include <QProcess>
 #include <QFileInfoList>
 
+#define VIDEOPLAYER_TOUT  60000
 typedef struct
 {
    QString routNumber;

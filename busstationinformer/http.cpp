@@ -291,7 +291,7 @@ float httpProcess::parsingWeatherData(QByteArray &data)
       return -1000;
 }
 //
-void httpProcess::sslErrors1(const QList<QSslError> &errors)
+void httpProcess::sslErrors(const QList<QSslError> &errors)
 {
     QString errorString;
     for (const QSslError &error : errors) {
@@ -358,7 +358,7 @@ void httpProcess::startWeatherRequest(void)
     connect(weatherReply,SIGNAL(finished()),this,SLOT(weatherFinished()));
     connect(weatherReply,SIGNAL(readyRead()),this,SLOT(weatherReadyRead()));
     //connect(&netManager,SIGNAL( sslErrors(QNetworkReply*,QList<QSslError>)) , SLOT( sslErrors(QNetworkReply*,QList<QSslError>)));
-    connect(weatherReply, &QNetworkReply::sslErrors, this, &httpProcess::sslErrors1);
+    connect(weatherReply, &QNetworkReply::sslErrors, this, &httpProcess::sslErrors);
     weatherReqState=HTTP_REQ_BUSY;
 
 

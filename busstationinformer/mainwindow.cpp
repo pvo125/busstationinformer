@@ -106,6 +106,7 @@ void MainWindow::extSoundProcessFinished(int, QProcess::ExitStatus)
    extSoundPlayer->deleteLater();
    //w_pins->w1_mutex.unlock();
    extSoundPlayerActive=false;
+   videotimer->start(VIDEOPLAYER_TOUT);
 }
 /*
  *
@@ -216,7 +217,7 @@ void MainWindow::customEvent(QEvent *event)
         case RedrawMainWindow::SOUND_BUTTON_PRESS:
         {
           StopVideoPlayer();
-          videotimer->start(30000);
+          videotimer->stop();
           if(!extSoundPlayerActive)
           {
             if(currRoutList && (currRoutList->isEmpty()==false))
@@ -231,7 +232,7 @@ void MainWindow::customEvent(QEvent *event)
              gsmmodule->callRequest=true;
              gsmmodule->hangUp=false;
              StopVideoPlayer();
-             videotimer->start(30000);
+             videotimer->stop();
              QString s="Вызов службы спасения 112!";
              Call112Notify=new InfoMsg(this,s,InfoMsg::NOTIFY_MSG);
           }
@@ -240,6 +241,7 @@ void MainWindow::customEvent(QEvent *event)
               gsmmodule->callRequest=false;
               gsmmodule->hangUp=true;
               Call112Notify->deleteLater();
+              videotimer->start(VIDEOPLAYER_TOUT);
              //Call112Notify=NULL;
           }
           /*
@@ -403,7 +405,7 @@ MainWindow::MainWindow(QWidget *parent)
     routStringEmptyFlag[1]=true;
     routStringEmptyFlag[2]=true;
     routStringEmptyFlag[3]=true;
-    //w_pins=new WiringPins(this);
+    w_pins=new WiringPins(this);
     onewiretempr=-1000;
 
     buffIdx=-1;
@@ -428,9 +430,9 @@ MainWindow::MainWindow(QWidget *parent)
     maxvideoListIdx=list->size();
     videolistIdx=0;
     videotimer=new QTimer();
-    videotimer->setInterval(30000);
+    //videotimer->setInterval(VIDEOPLAYER_PERIOD);
     connect(videotimer,SIGNAL(timeout()),SLOT(videoTimerExpired()));
-    videotimer->start();
+    videotimer->start(VIDEOPLAYER_TOUT);
 
     soundtimer=new QTimer();
     connect(soundtimer,SIGNAL(timeout()),SLOT(soundTimerExpired()));
@@ -464,8 +466,7 @@ MainWindow::~MainWindow()
         emit gsmmodule->finishedPort(); //delete gsmmodule;
     }
 
-    //delete w_pins;
-
+    delete w_pins;
     if(extSoundPlayerActive)
          StopSoundPlayer();
     if(extVideoPlayerActive)
@@ -604,15 +605,15 @@ loop:
  */
 void MainWindow::secTimerExpired(void)
 {
-    if(extVideoPlayerActive)
-        return;
     QTime time=QTime::currentTime();
     if((time.hour()==6) &&  (time.minute()==2) && (time.second()==15 || time.second()==16 || time.second()==17))
     {
-        //system("sudo reboot");
-        //close();
-        //return;
+        system("sudo reboot");
+        close();
+        return;
     }
+    if(extVideoPlayerActive)
+        return;
     QDate date=QDate::currentDate();
     QString str=time.toString("hh:mm");;
     ui->labelTime->setText(str);
@@ -789,6 +790,7 @@ void MainWindow::extVideoProcessFinished(int, QProcess::ExitStatus)
        extVideoPlayer->deleteLater();
        //w_pins->w1_mutex.unlock();
        extVideoPlayerActive=false;
+       videotimer->start(VIDEOPLAYER_TOUT);
    }
    if(++videolistIdx >=maxvideoListIdx)   videolistIdx=0;
 }
@@ -818,7 +820,7 @@ void MainWindow::videoTimerExpired(void)
        // {
          //  w_pins->w1_mutex.lock();
            StartVideoPlayer();
-           videotimer->start(30000);
+           //videotimer->start(VIDEOPLAYER_TOUT);
        // }
        // else
        // {

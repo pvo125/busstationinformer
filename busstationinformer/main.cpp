@@ -20,7 +20,7 @@ int main(int argc, char *argv[])
 #ifdef Q_OS_WIN
     w.show();
 #else
-    w.show();//FullScreen();
+    w.showFullScreen();
 #endif
     return a.exec();
 }

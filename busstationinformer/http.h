@@ -57,7 +57,7 @@ public slots:
     void httpTimerExpired();
 
     //void sslErrors(QNetworkReply*,QList<QSslError>);
-    void sslErrors1(const QList<QSslError> &errors);
+    void sslErrors(const QList<QSslError> &errors);
     void weatherFinished();
     void weatherReadyRead();
     void weatherTimerExpired();
