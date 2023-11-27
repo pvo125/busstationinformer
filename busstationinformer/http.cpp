@@ -17,10 +17,10 @@ void httpProcess::SendBuffIdx(int *pIdx)
 /*
  *
  */
-void httpProcess::SendWeatherTempr(float *pTempr)
+void httpProcess::SendWeatherTempr(int *pTempr)
 {
     RedrawMainWindow *ev=new RedrawMainWindow((QEvent::Type)(QEvent::User));
-    ev->SendingMsg(RedrawMainWindow::UPDATE_TEMPR);
+    ev->SendingMsg(RedrawMainWindow::UPDATE_WEATHER_TEMPR);
     ev->SendingData(pTempr);
     QApplication::postEvent(parent(),ev);
 }

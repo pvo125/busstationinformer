@@ -112,7 +112,7 @@ WiringPins::~WiringPins()
 void WiringPins::SendTempr(float *pTempr)
 {
     RedrawMainWindow *ev=new RedrawMainWindow((QEvent::Type)(QEvent::User));
-    ev->SendingMsg(RedrawMainWindow::UPDATE_TEMPR);
+    ev->SendingMsg(RedrawMainWindow::UPDATE_W1_TEMPR);
     ev->SendingData(pTempr);
     QApplication::postEvent(parent(),ev);
 }

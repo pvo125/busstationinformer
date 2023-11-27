@@ -207,11 +207,18 @@ void MainWindow::customEvent(QEvent *event)
            }
          }
         break;
-        case RedrawMainWindow::UPDATE_TEMPR:
+        case RedrawMainWindow::UPDATE_W1_TEMPR:
         {
           float *pTempr=(float*)((RedrawMainWindow*)event)->GetingData();
           if(pTempr)
             onewiretempr=*pTempr;
+        }
+        break;
+        case RedrawMainWindow::UPDATE_WEATHER_TEMPR:
+        {
+          int *pweatherTempr=(int*)((RedrawMainWindow*)event)->GetingData();
+          if(pweatherTempr)
+            weatherTempr=*pweatherTempr;
         }
         break;
         case RedrawMainWindow::SOUND_BUTTON_PRESS:
@@ -625,7 +632,7 @@ void MainWindow::secTimerExpired(void)
        if(onewiretempr > -50 && onewiretempr <100)
        {
            //QString strtemp=QString::number(onewiretempr,'f',1);
-           QString strtemp=QString::number(onewiretempr);
+           QString strtemp=QString::number(weatherTempr);
            strtemp.append("°C");
            ui->labelTempr->setText(strtemp);
        }

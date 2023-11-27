@@ -29,7 +29,7 @@ public:
 private:
 
     int          buffIndex;
-    float weatherTempr;
+    int weatherTempr;
     enum HTTP_REQUEST_STATE  httpReqState;
     QTimer                httpRequestTimer;
     QNetworkAccessManager netManager;
@@ -48,7 +48,7 @@ private:
     void parsingRoutsData(QByteArray &data,QVector<ROUT_ITEM> &list);
     float parsingWeatherData(QByteArray &data);
     void SendBuffIdx(int *pIdx);
-    void SendWeatherTempr(float *pTempr);
+    void SendWeatherTempr(int *pTempr);
     void startWeatherRequest(void);
 
 public slots:

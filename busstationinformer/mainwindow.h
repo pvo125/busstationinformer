@@ -73,7 +73,7 @@ public:
    {
       UPDATE_ROUT_LIST=1,
       NO_ACTIVE_ROUTS,
-      UPDATE_TEMPR,
+      UPDATE_W1_TEMPR,
       SOUND_BUTTON_PRESS,
       CALL112_BUTTON_PRESS,
       FILECONFIG_ERR_MESSAGE,
@@ -83,6 +83,7 @@ public:
       GSM_PARAM,
       GSM_TIMER_START,
       GSM_TIMER_STOP,
+      UPDATE_WEATHER_TEMPR,
       W1_MUTEX_UNLOCK
    };
    RedrawMainWindow(Type type) : QEvent(type) { }
@@ -132,6 +133,7 @@ public:
     QVector<ROUT_ITEM>  *currRoutList;
     WiringPins *w_pins;
     float onewiretempr;
+    int weatherTempr;
     //QBuffer *buffer;
     //QByteArray *arr;
 
