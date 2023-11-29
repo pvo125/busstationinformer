@@ -612,6 +612,9 @@ loop:
  */
 void MainWindow::secTimerExpired(void)
 {
+    static QTime t;
+    static int temprPrev=-200;
+
     QTime time=QTime::currentTime();
     if((time.hour()==6) &&  (time.minute()==2) && (time.second()==15 || time.second()==16 || time.second()==17))
     {
@@ -621,26 +624,30 @@ void MainWindow::secTimerExpired(void)
     }
     if(extVideoPlayerActive)
         return;
-    QDate date=QDate::currentDate();
-    QString str=time.toString("hh:mm");;
-    ui->labelTime->setText(str);
-    str=date.toString("dd.MM.yyyy");
-    ui->labelDate->setText(str);
+    if(t.minute()!=time.minute())
+    {
+        QDate date=QDate::currentDate();
+        QString str=time.toString("hh:mm");;
+        ui->labelTime->setText(str);
+        str=date.toString("dd.MM.yyyy");
+        ui->labelDate->setText(str);
+        t=time;
+    }
 
-   // if(w_pins->initCompletedFlag)
-   // {
-       if(onewiretempr > -50 && onewiretempr <100)
-       {
-           //QString strtemp=QString::number(onewiretempr,'f',1);
-           QString strtemp=QString::number(weatherTempr);
-           strtemp.append("°C");
-           ui->labelTempr->setText(strtemp);
-       }
+    if(temprPrev!=weatherTempr)
+    {
+        if(weatherTempr > -50 && weatherTempr <100)
+        {
+            //QString strtemp=QString::number(onewiretempr,'f',1);
+            QString strtemp=QString::number(weatherTempr);
+            strtemp.append("°C");
+            ui->labelTempr->setText(strtemp);
+            temprPrev=weatherTempr;
+        }
         else
-          ui->labelTempr->setText("----");
-   // }
-   // else
-     //   ui->labelTempr->setText("----");
+            ui->labelTempr->setText("----");
+
+    }
 }
 /*
  *

@@ -125,7 +125,7 @@ httpProcess::httpProcess(MainWindow *w):
    //weatherRequest.setHeader(QNetworkRequest::ContentTypeHeader,"text/html");
    weatherRequest.setRawHeader(QByteArray("X-Yandex-API-Key"),QByteArray(apikey.toUtf8())) ;
    connect(&weatherRequestTimer,SIGNAL(timeout()),this,SLOT(weatherTimerExpired()));
-   weatherRequestTimer.setInterval(1200000);
+   weatherRequestTimer.setInterval(1800000);
    weatherRequestTimer.start();
    startWeatherRequest();
 }

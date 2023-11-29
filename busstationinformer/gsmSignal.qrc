@@ -6,6 +6,5 @@
         <file>gsm_bitmaps/gsm_4.png</file>
         <file>gsm_bitmaps/gsm_5.png</file>
         <file>gsm_bitmaps/gsm_noreg.png</file>
-        <file>weather_bitmaps/ambrella_white.png</file>
     </qresource>
 </RCC>

@@ -1,0 +1,10 @@
+release/http.o
+release/main.o
+release/mainwindow.o
+release/modem.o
+release/wiring.o
+release/qrc_gsmSignal.o
+release/moc_http.o
+release/moc_mainwindow.o
+release/moc_modem.o
+release/moc_wiring.o
