@@ -36,3 +36,5 @@ else: unix:!android: target.path = /home/pi/app
 
 RESOURCES += \
     gsmSignal.qrc
+
+DISTFILES +=

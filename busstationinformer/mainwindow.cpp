@@ -382,6 +382,9 @@ MainWindow::MainWindow(QWidget *parent)
 {
     ui->setupUi(this);
 
+    ui->WeathergraphicsView->hide();
+    weatherTempr=-200;
+
     extVideoPlayerActive=false;
     extSoundPlayerActive=false;
     extVideoPlayer=NULL;
@@ -636,16 +639,20 @@ void MainWindow::secTimerExpired(void)
 
     if(temprPrev!=weatherTempr)
     {
+        temprPrev=weatherTempr;
         if(weatherTempr > -50 && weatherTempr <100)
         {
+            ui->WeathergraphicsView->show();
             //QString strtemp=QString::number(onewiretempr,'f',1);
             QString strtemp=QString::number(weatherTempr);
-            strtemp.append("°C");
+            strtemp.append(" °C");
             ui->labelTempr->setText(strtemp);
-            temprPrev=weatherTempr;
         }
         else
+        {
+            ui->WeathergraphicsView->hide();
             ui->labelTempr->setText("----");
+        }
 
     }
 }
