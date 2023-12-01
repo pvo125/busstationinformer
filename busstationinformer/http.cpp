@@ -119,7 +119,7 @@ httpProcess::httpProcess(MainWindow *w):
        apikey.append("dd616505-6ec2-433b-a08e-a99a9bfcee40");
    }
    url.clear();
-   url.setUrl("https://api.weather.yandex.ru/v2/fact?lat="+latitude+"&lon="+longitude);   //56.010563&lon=92.852572
+   url.setUrl("https://api.weather.yandex.ru/v2/informers?lat="+latitude+"&lon="+longitude+"&lang=en_US");   //56.010563&lon=92.852572
    //url.setUrl("http://api.openweathermap.org/data/2.5/find?q=Krasnoyarsk,RU&type=like&units=metric&APPID=10d39378d7d6d6ac8dabf60d74155c76"); //1d879dedc7592d989f5aefb7f38b8ca1
    weatherRequest=QNetworkRequest(url);
    //weatherRequest.setHeader(QNetworkRequest::ContentTypeHeader,"text/html");

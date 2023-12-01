@@ -124,7 +124,8 @@ release/qrc_gsmSignal.cpp: ../busstationinformer/gsmSignal.qrc \
 		../busstationinformer/gsm_bitmaps/gsm_1.png \
 		../busstationinformer/gsm_bitmaps/gsm_5.png \
 		../busstationinformer/gsm_bitmaps/gsm_4.png \
-		../busstationinformer/gsm_bitmaps/gsm_3.png
+		../busstationinformer/gsm_bitmaps/gsm_3.png \
+		../busstationinformer/weather/yandex_wather_logo.png
 	D:\Qt\Qt5.12.10\5.12.10\mingw73_32\bin\rcc.exe -name gsmSignal ..\busstationinformer\gsmSignal.qrc -o release\qrc_gsmSignal.cpp
 
 compiler_moc_predefs_make_all: release/moc_predefs.h

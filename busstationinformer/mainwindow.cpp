@@ -382,8 +382,10 @@ MainWindow::MainWindow(QWidget *parent)
 {
     ui->setupUi(this);
 
+    ui->WeathergraphicsView->setAlignment(Qt::AlignHCenter);
     ui->WeathergraphicsView->hide();
     weatherTempr=-200;
+    ui->labelTempr->setAlignment(Qt::AlignHCenter);
 
     extVideoPlayerActive=false;
     extSoundPlayerActive=false;
