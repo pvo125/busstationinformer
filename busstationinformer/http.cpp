@@ -125,8 +125,7 @@ httpProcess::httpProcess(MainWindow *w):
    //weatherRequest.setHeader(QNetworkRequest::ContentTypeHeader,"text/html");
    weatherRequest.setRawHeader(QByteArray("X-Yandex-API-Key"),QByteArray(apikey.toUtf8())) ;
    connect(&weatherRequestTimer,SIGNAL(timeout()),this,SLOT(weatherTimerExpired()));
-   weatherRequestTimer.setInterval(1800000);
-   weatherRequestTimer.start();
+   //weatherRequestTimer.setInterval(1800000);
    startWeatherRequest();
 }
 /*
@@ -300,33 +299,34 @@ void httpProcess::sslErrors(const QList<QSslError> &errors)
         errorString += error.errorString();
     }
 }
-
 //
 void httpProcess::weatherFinished(void)
 {
     int err=weatherReply->error();
     if(!err)
     {
+        weatherRequestTimer.start(1800000);
         weatherReqState=HTTP_REQ_COMPLETED;
-        if(errors.connectionErr==1)
-        {
-           RedrawMainWindow *ev=new RedrawMainWindow(QEvent::User);
-           ev->SendingMsg(RedrawMainWindow::CONNECT_ERR_MESSAGE);
-           errors.connectionErr=0;
-           ev->SendingData(&errors.allbits);
-           QApplication::postEvent(parent(),ev);
-        }
+//        if(errors.connectionErr==1)
+//        {
+//           RedrawMainWindow *ev=new RedrawMainWindow(QEvent::User);
+//           ev->SendingMsg(RedrawMainWindow::CONNECT_ERR_MESSAGE);
+//           errors.connectionErr=0;
+//           ev->SendingData(&errors.allbits);
+//           QApplication::postEvent(parent(),ev);
+//        }
     }
     else
     {
-       if(errors.connectionErr==0)
-       {
-            RedrawMainWindow *ev=new RedrawMainWindow(QEvent::User);
-            ev->SendingMsg(RedrawMainWindow::CONNECT_ERR_MESSAGE);
-            errors.connectionErr=1;
-            ev->SendingData(&errors.allbits);
-            QApplication::postEvent(parent(),ev);
-       }
+//       if(errors.connectionErr==0)
+//       {
+//            RedrawMainWindow *ev=new RedrawMainWindow(QEvent::User);
+//            ev->SendingMsg(RedrawMainWindow::CONNECT_ERR_MESSAGE);
+//            errors.connectionErr=1;
+//            ev->SendingData(&errors.allbits);
+//            QApplication::postEvent(parent(),ev);
+//       }
+       weatherRequestTimer.start(60000);
        weatherReqState=HTTP_REQ_IDLE;
     }
     weatherReply->deleteLater();
@@ -348,7 +348,6 @@ void httpProcess::weatherReadyRead(void)
      else
        weatherReply->abort();
 }
-//
 //
 void httpProcess::startWeatherRequest(void)
 {
