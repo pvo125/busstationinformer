@@ -5,16 +5,16 @@
 
 void BGS2_E::SendGsmParam(GSM_PARAM *pgsm)
 {
-    RedrawMainWindow *ev=new RedrawMainWindow((QEvent::Type)(QEvent::User));
+    RedrawMainWindow *ev=new RedrawMainWindow(QEvent::User);
     ev->SendingMsg(RedrawMainWindow::GSM_PARAM);
-    ev->SendingData((uint32_t*)pgsm);
+    ev->SendingData(reinterpret_cast<uint32_t*>(pgsm));
     QApplication::postEvent(mainW,ev);
 }
 void BGS2_E::SendGsmErrors(ERRORS *err)
 {
-    RedrawMainWindow *ev=new RedrawMainWindow((QEvent::Type)(QEvent::User));
+    RedrawMainWindow *ev=new RedrawMainWindow(QEvent::User);
     ev->SendingMsg(RedrawMainWindow::COMPORT_ERR_MESSAGE);
-    ev->SendingData((uint32_t*)err);
+    ev->SendingData(reinterpret_cast<uint32_t*>(err));
     QApplication::postEvent(mainW,ev);
 }
 
@@ -38,25 +38,21 @@ void BGS2_E::gsmProcess(void)
       {
           callRequest=false;
           callState=1;
-    #ifdef Q_OS_WIN
-         QFile file("appconfig.txt");
-    #else
-        QFile file("/home/pi/app/appconfig.txt");
-    #endif
-       if(file.open(QIODevice::ReadOnly)==true)
-       {
-          int startIdx,endIdx;
-          QByteArray array=file.readAll();
-          file.close();
-          startIdx=array.indexOf("phone=");
-          if(startIdx >=0)
+          QFile file(QApplication::applicationDirPath()+"/appconfig.txt");
+          if(file.open(QIODevice::ReadOnly)==true)
           {
-            startIdx+=6;
-            endIdx=array.indexOf(';',startIdx);
-            QString phone=array.mid(startIdx,endIdx-startIdx);
-            ATD(phone);
+            int startIdx,endIdx;
+            QByteArray array=file.readAll();
+            file.close();
+            startIdx=array.indexOf("phone=");
+            if(startIdx >=0)
+            {
+              startIdx+=6;
+              endIdx=array.indexOf(';',startIdx);
+              QString phone=array.mid(startIdx,endIdx-startIdx);
+              ATD(phone);
+            }
           }
-       }
       }
       else if(hangUp)
       {
@@ -95,9 +91,9 @@ BGS2_E::BGS2_E(MainWindow *w)
     gsmParam.netReg=-1;
     gsmParam.rssi=99;
 
-    serial=NULL;
-    gsmtimer=NULL;
-    loop=NULL;
+    serial=nullptr;
+    gsmtimer=nullptr;
+    loop=nullptr;
 
 }
 /*
@@ -113,19 +109,19 @@ BGS2_E::~BGS2_E()
   if(serial)
   {
     delete serial;
-    serial=NULL;
+    serial=nullptr;
   }
   if(loop)
   {
       delete loop;
-      loop=NULL;
+      loop=nullptr;
   }
   if(gsmtimer)
   {
       delete gsmtimer;
-      gsmtimer=NULL;
+      gsmtimer=nullptr;
   }
-  mainW->gsmmodule=NULL;
+  mainW->gsmmodule=nullptr;
 }
 /*
  *
@@ -266,9 +262,9 @@ int BGS2_E::ProcessURC(void)
         //hangUp=true;
         if(callState)
         {
-            RedrawMainWindow *ev=new RedrawMainWindow((QEvent::Type)(QEvent::User));
+            RedrawMainWindow *ev=new RedrawMainWindow(QEvent::User);
             ev->SendingMsg(RedrawMainWindow::CALL112_BUTTON_PRESS);
-            ev->SendingData(NULL);
+            ev->SendingData(nullptr);
             QApplication::postEvent(mainW,ev);
         }
       }
@@ -277,9 +273,9 @@ int BGS2_E::ProcessURC(void)
           //hangUp=true;
           if(callState)
           {
-              RedrawMainWindow *ev=new RedrawMainWindow((QEvent::Type)(QEvent::User));
+              RedrawMainWindow *ev=new RedrawMainWindow(QEvent::User);
               ev->SendingMsg(RedrawMainWindow::CALL112_BUTTON_PRESS);
-              ev->SendingData(NULL);
+              ev->SendingData(nullptr);
               QApplication::postEvent(mainW,ev);
           }
 
@@ -344,7 +340,7 @@ int BGS2_E::AT(void)
     if(threadExitRequest)
         return -1;
     serial->write("AT\r");
-    if(WaitForString("OK",NULL,GSM_TOUT)<0)
+    if(WaitForString("OK",nullptr,GSM_TOUT)<0)
         return -1;
     thread()->msleep(GSM_CMD_PAUSE);
     return 1;
@@ -357,7 +353,7 @@ int BGS2_E::ATE(void)
     if(threadExitRequest)
         return -1;
     serial->write("ATE0\r");
-    if(WaitForString("OK",NULL,GSM_TOUT)<0)
+    if(WaitForString("OK",nullptr,GSM_TOUT)<0)
         return -1;
     thread()->msleep(GSM_CMD_PAUSE);
     return 1;
@@ -378,12 +374,12 @@ int BGS2_E::AT_CREG(void)
     serial->write("AT+CREG?\r");
     if(WaitForString("+CREG:",&response,GSM_TOUT)<0)
         return -1;
-    if(WaitForString("OK",NULL,GSM_TOUT)<0)
+    if(WaitForString("OK",nullptr,GSM_TOUT)<0)
         return -1;
     startIdx=response.indexOf(',');
     startIdx+=1;
     s=response.mid(startIdx,1);
-    result=s.toUInt(&ok);
+    result=static_cast<int>(s.toUInt(&ok));
     thread()->msleep(GSM_CMD_PAUSE);
     if(ok==true)
     {
@@ -410,13 +406,13 @@ int BGS2_E::AT_CSQ(void)
     serial->write("AT+CSQ\r");
     if(WaitForString("+CSQ:",&response,GSM_TOUT)<0)
         return -1;
-    if(WaitForString("OK",NULL,GSM_TOUT)<0)
+    if(WaitForString("OK",nullptr,GSM_TOUT)<0)
         return -1;
     startIdx=response.indexOf(':');
     startIdx+=2;
     endIdx=response.indexOf(',');
     s=response.mid(startIdx,endIdx-startIdx);
-    result=s.toUInt(&ok);
+    result=static_cast<int>(s.toUInt(&ok));
     thread()->msleep(GSM_CMD_PAUSE);
     if(ok==true)
      return result;
@@ -435,7 +431,7 @@ int BGS2_E::AT_SM20(int mode)
     s.append(QString::number(mode).append('\r'));
     QByteArray arr=s.toUtf8();
     serial->write(arr);
-    if(WaitForString("OK",NULL,GSM_TOUT)<0)
+    if(WaitForString("OK",nullptr,GSM_TOUT)<0)
         return -1;
     thread()->msleep(GSM_CMD_PAUSE);
     return 1;
@@ -451,7 +447,7 @@ int BGS2_E::ATD(QString &s)
     str.append(s).append(";\r");
     QByteArray arr=str.toUtf8();
     serial->write(arr);
-    if(WaitForString("OK",NULL,GSM_TOUT)<0)
+    if(WaitForString("OK",nullptr,GSM_TOUT)<0)
         return -1;
     thread()->msleep(GSM_CMD_PAUSE);
     return 1;
@@ -464,7 +460,7 @@ int BGS2_E::ATH(void)
     if(threadExitRequest)
         return -1;
     serial->write("ATH\r");
-    if(WaitForString("OK",NULL,GSM_TOUT)<0)
+    if(WaitForString("OK",nullptr,GSM_TOUT)<0)
         return -1;
     thread()->msleep(GSM_CMD_PAUSE);
     return 1;

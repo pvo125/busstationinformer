@@ -9,16 +9,16 @@ static bool call112ButtonReq=false;
 
 void * w1ThreadFunc(void *arg)
 {
-   WiringPins *p=(WiringPins*)arg;
+   WiringPins *p=reinterpret_cast<WiringPins*>(arg);
    p->runW1();
-   return 0;
+   return nullptr;
 }
 
 void * buttonsThreadFunc(void *arg)
 {
-   WiringPins *p=(WiringPins*)arg;
+   WiringPins *p=reinterpret_cast<WiringPins*>(arg);
    p->runButtons();
-   return 0;
+   return nullptr;
 }
 
 void ButtonSoundplay_ISR(void)
@@ -91,7 +91,7 @@ WiringPins::WiringPins(MainWindow *w):
 //      pthread_attr_setinheritsched(&attr, PTHREAD_EXPLICIT_SCHED);
 
       //pthread_create(&w1Thread,NULL,w1ThreadFunc,this);
-      pthread_create(&buttonsThread,NULL,buttonsThreadFunc,this);
+      pthread_create(&buttonsThread,nullptr,buttonsThreadFunc,this);
 }
 
 WiringPins::~WiringPins()
@@ -103,7 +103,7 @@ WiringPins::~WiringPins()
 
     int ret=pthread_cancel(buttonsThread);
     if(ret==0)
-      pthread_join(buttonsThread,NULL);
+      pthread_join(buttonsThread,nullptr);
 }
 
 /*
@@ -111,7 +111,7 @@ WiringPins::~WiringPins()
  */
 void WiringPins::SendTempr(float *pTempr)
 {
-    RedrawMainWindow *ev=new RedrawMainWindow((QEvent::Type)(QEvent::User));
+    RedrawMainWindow *ev=new RedrawMainWindow(QEvent::User);
     ev->SendingMsg(RedrawMainWindow::UPDATE_W1_TEMPR);
     ev->SendingData(pTempr);
     QApplication::postEvent(parent(),ev);
@@ -150,7 +150,7 @@ void WiringPins::runW1(void)
        // Read the string following "t=".
       sscanf(temp,"t=%s",temp);
        // atof: changes string to float.
-      value = atof(temp)/1000;
+      value =static_cast<float>(atof(temp)/1000);
       SendTempr(&value);
       flag=1;
       delay(800);
@@ -184,9 +184,9 @@ void WiringPins::runButtons(void)
           delay(50);
           if(digitalRead(PI_SOUND_PIN)==LOW)
           {
-            RedrawMainWindow *ev=new RedrawMainWindow((QEvent::Type)(QEvent::User));
+            RedrawMainWindow *ev=new RedrawMainWindow(QEvent::User);
             ev->SendingMsg(RedrawMainWindow::SOUND_BUTTON_PRESS);
-            ev->SendingData(NULL);
+            ev->SendingData(nullptr);
             QApplication::postEvent(parent(),ev);
           }
           soundButtonReq=false;
@@ -196,9 +196,9 @@ void WiringPins::runButtons(void)
           delay(50);
           if(digitalRead(PI_CALL112_PIN)==LOW)
           {
-            RedrawMainWindow *ev=new RedrawMainWindow((QEvent::Type)(QEvent::User));
+            RedrawMainWindow *ev=new RedrawMainWindow(QEvent::User);
             ev->SendingMsg(RedrawMainWindow::CALL112_BUTTON_PRESS);
-            ev->SendingData(NULL);
+            ev->SendingData(nullptr);
             QApplication::postEvent(parent(),ev);
           }
           call112ButtonReq=false;

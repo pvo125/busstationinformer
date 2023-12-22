@@ -19,7 +19,7 @@ void httpProcess::SendBuffIdx(int *pIdx)
  */
 void httpProcess::SendWeatherTempr(int *pTempr)
 {
-    RedrawMainWindow *ev=new RedrawMainWindow((QEvent::Type)(QEvent::User));
+    RedrawMainWindow *ev=new RedrawMainWindow(QEvent::User);
     ev->SendingMsg(RedrawMainWindow::UPDATE_WEATHER_TEMPR);
     ev->SendingData(pTempr);
     QApplication::postEvent(parent(),ev);
@@ -31,7 +31,7 @@ int httpProcess::parsingConfigParam(const char *token,QByteArray &array,QString 
 {
     int startIndex,endIdx;
 
-    int len=strlen(token);
+    int len=static_cast<int>(strlen(token));
     startIndex=array.indexOf(token);
     if(startIndex>=0)
     {
@@ -59,7 +59,7 @@ httpProcess::httpProcess(MainWindow *w):
        RedrawMainWindow *ev=new RedrawMainWindow(QEvent::User);
        ev->SendingMsg(RedrawMainWindow::FILECONFIG_ERR_MESSAGE);
        errors.fileconfigErr=1;
-       ev->SendingData((uint32_t*)&errors);
+       ev->SendingData(reinterpret_cast<uint32_t*>(&errors));
        QApplication::postEvent(parent(),ev);
        return;
    }
@@ -72,7 +72,7 @@ httpProcess::httpProcess(MainWindow *w):
        RedrawMainWindow *ev=new RedrawMainWindow(QEvent::User);
        ev->SendingMsg(RedrawMainWindow::FILECONFIG_ERR_MESSAGE);
        errors.fileconfigErr=1;
-       ev->SendingData((uint32_t*)&errors);
+       ev->SendingData(reinterpret_cast<uint32_t*>(&errors));
        QApplication::postEvent(parent(),ev);
        return;
    }
@@ -83,7 +83,7 @@ httpProcess::httpProcess(MainWindow *w):
        RedrawMainWindow *ev=new RedrawMainWindow(QEvent::User);
        ev->SendingMsg(RedrawMainWindow::FILECONFIG_ERR_MESSAGE);
        errors.fileconfigErr=1;
-       ev->SendingData((uint32_t*)&errors);
+       ev->SendingData(reinterpret_cast<uint32_t*>(&errors));
        QApplication::postEvent(parent(),ev);
        return;
    }
@@ -234,9 +234,9 @@ void httpProcess::httpReadyRead(void)
         QByteArray dataRaw;
         dataRaw=reply->readAll();
         if(buffIndex==0)   // 0
-            parsingRoutsData(dataRaw,*((MainWindow*)parent())->routlistBack);
+            parsingRoutsData(dataRaw,*(reinterpret_cast<MainWindow*>(parent())->routlistBack));
         else            //1, -1
-            parsingRoutsData(dataRaw,*((MainWindow*)parent())->routlistFront);
+            parsingRoutsData(dataRaw,*(reinterpret_cast<MainWindow*>(parent())->routlistFront));
      }
      else
        reply->abort();
@@ -261,7 +261,7 @@ void httpProcess::startRequest(void)
 //
 void httpProcess::httpTimerExpired(void)
 {
-    if(!((MainWindow*)parent())->extSoundPlayerActive)
+    if(!(reinterpret_cast<MainWindow*>(parent())->extSoundPlayerActive))
     {
         startRequest();
         httpRequestTimer.start(45000);
@@ -339,9 +339,9 @@ void httpProcess::weatherReadyRead(void)
         QByteArray dataRaw;
         dataRaw=weatherReply->readAll();
         float temp=parsingWeatherData(dataRaw);
-        if(temp!=-1000)
+        if(static_cast<int>(temp)!=-1000)
         {
-            weatherTempr=temp;
+            weatherTempr=static_cast<int>(temp);
             SendWeatherTempr(&weatherTempr);
         }
      }

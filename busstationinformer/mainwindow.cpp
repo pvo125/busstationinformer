@@ -21,7 +21,7 @@ InfoMsg::InfoMsg(MainWindow *parent, QString &str,enum TYPE_NOTIFY type)
     QRect rect;
 
    MsgWindow.setParent(parent);
-    rect=((MainWindow*)parent)->centralWidget()->geometry();
+    rect=parent->centralWidget()->geometry();
     QPoint centre=rect.center();
     MsgWindow.setGeometry(QRect(centre.x()-300,centre.y()-100+count*250,600,200));
     count++;
@@ -181,11 +181,11 @@ void MainWindow::customEvent(QEvent *event)
 {
     if(event->type()==QEvent::User)
     {
-      switch(((RedrawMainWindow*)event)->GetingMsg())
+      switch(reinterpret_cast<RedrawMainWindow*>(event)->GetingMsg())
       {
         case RedrawMainWindow::UPDATE_ROUT_LIST:
         {
-          int *pIdxBuff=(int*)((RedrawMainWindow*)event)->GetingData();
+          int *pIdxBuff=reinterpret_cast<int*>(reinterpret_cast<RedrawMainWindow*>(event)->GetingData());
           if(pIdxBuff)
             buffIdx=*pIdxBuff;
         }
@@ -193,7 +193,7 @@ void MainWindow::customEvent(QEvent *event)
         case RedrawMainWindow::NO_ACTIVE_ROUTS:
         {
            ERRORS err;
-           err.allbits=*(uint32_t*)((RedrawMainWindow*)event)->GetingData();
+           err.allbits=*reinterpret_cast<uint32_t*>(reinterpret_cast<RedrawMainWindow*>(event)->GetingData());
            if(err.noactiveRouts)
            {
                QString s="Нет активных маршрутов!";
@@ -203,20 +203,20 @@ void MainWindow::customEvent(QEvent *event)
            {
                if(NoActiveRoutsNotify)
                  delete NoActiveRoutsNotify;
-               NoActiveRoutsNotify=NULL;
+               NoActiveRoutsNotify=nullptr;
            }
          }
         break;
         case RedrawMainWindow::UPDATE_W1_TEMPR:
         {
-          float *pTempr=(float*)((RedrawMainWindow*)event)->GetingData();
+          float *pTempr=reinterpret_cast<float*>(reinterpret_cast<RedrawMainWindow*>(event)->GetingData());
           if(pTempr)
             onewiretempr=*pTempr;
         }
         break;
         case RedrawMainWindow::UPDATE_WEATHER_TEMPR:
         {
-          int *pweatherTempr=(int*)((RedrawMainWindow*)event)->GetingData();
+          int *pweatherTempr=reinterpret_cast<int*>(reinterpret_cast<RedrawMainWindow*>(event)->GetingData());
           if(pweatherTempr)
             weatherTempr=*pweatherTempr;
         }
@@ -279,7 +279,7 @@ void MainWindow::customEvent(QEvent *event)
         case RedrawMainWindow::FILECONFIG_ERR_MESSAGE:
         {
             ERRORS  err;
-            err.allbits=*(uint32_t*)((RedrawMainWindow*)event)->GetingData();
+            err.allbits=*reinterpret_cast<uint32_t*>(reinterpret_cast<RedrawMainWindow*>(event)->GetingData());
             if(err.fileconfigErr)
             {
                 QString s="Файл конфигурации не найден или содержит неверные данные!";
@@ -290,7 +290,7 @@ void MainWindow::customEvent(QEvent *event)
         case RedrawMainWindow::CONNECT_ERR_MESSAGE:
         {
           ERRORS  err;
-          err.allbits=*(uint32_t*)((RedrawMainWindow*)event)->GetingData();
+          err.allbits=*reinterpret_cast<uint32_t*>(reinterpret_cast<RedrawMainWindow*>(event)->GetingData());
           if(err.connectionErr)
           {
               QString s="Нет соединения с сервером!Данные по маршрутам не актуальны!";
@@ -300,14 +300,14 @@ void MainWindow::customEvent(QEvent *event)
           {
               if(NoConnectWarning)
                 delete NoConnectWarning;
-              NoConnectWarning=NULL;
+              NoConnectWarning=nullptr;
           }
         }
         break;
         case RedrawMainWindow::COMPORT_ERR_MESSAGE:
         {
             ERRORS  err;
-            err.allbits=*(uint32_t*)((RedrawMainWindow*)event)->GetingData();
+            err.allbits=*reinterpret_cast<uint32_t*>(reinterpret_cast<RedrawMainWindow*>(event)->GetingData());
             if(err.comportOpenErr)
             {
                 if(!COMPortOpenError)
@@ -326,14 +326,14 @@ void MainWindow::customEvent(QEvent *event)
             {
                 if(COMPortConnWarning)
                   delete COMPortConnWarning;
-                COMPortConnWarning=NULL;
+                COMPortConnWarning=nullptr;
             }
         }
         break;
         case RedrawMainWindow::GSM_PARAM:
         {
             GSM_PARAM  *param;
-            param=(GSM_PARAM*)((RedrawMainWindow*)event)->GetingData();
+            param=reinterpret_cast<GSM_PARAM*>(reinterpret_cast<RedrawMainWindow*>(event)->GetingData());
             if(param->netReg==-1 || param->rssi==99)
             {
                ui->gsmSignalgraphicsView->setStyleSheet(QString::fromUtf8("border-image: url(:/gsm_bitmaps/gsm_noreg.png);"));
@@ -389,8 +389,8 @@ MainWindow::MainWindow(QWidget *parent)
 
     extVideoPlayerActive=false;
     extSoundPlayerActive=false;
-    extVideoPlayer=NULL;
-    extSoundPlayer=NULL;
+    extVideoPlayer=nullptr;
+    extSoundPlayer=nullptr;
 
     gsmThread=new QThread();
     gsmmodule=new BGS2_E(this);
@@ -404,14 +404,14 @@ MainWindow::MainWindow(QWidget *parent)
     gsmmodule->moveToThread(gsmThread);
     gsmThread->start();
 
-    FileConfigError=NULL;
-    COMPortOpenError=NULL;
+    FileConfigError=nullptr;
+    COMPortOpenError=nullptr;
 
-    NoConnectWarning=NULL;
-    COMPortConnWarning=NULL;
+    NoConnectWarning=nullptr;
+    COMPortConnWarning=nullptr;
 
-    NoActiveRoutsNotify=NULL;
-    Call112Notify=NULL;
+    NoActiveRoutsNotify=nullptr;
+    Call112Notify=nullptr;
 
     routStringEmptyFlag[0]=true;
     routStringEmptyFlag[1]=true;
@@ -421,7 +421,7 @@ MainWindow::MainWindow(QWidget *parent)
     onewiretempr=-1000;
 
     buffIdx=-1;
-    currRoutList=NULL;
+    currRoutList=nullptr;
     http=new httpProcess(this);
     routlistFront=new QVector<ROUT_ITEM>();
     routlistBack=new QVector<ROUT_ITEM>();

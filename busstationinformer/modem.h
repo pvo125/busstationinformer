@@ -14,8 +14,8 @@
 
 typedef struct
 {
-   uint8_t rssi;
-   int8_t netReg;
+   int rssi;
+   int netReg;
 
 }GSM_PARAM;
 
